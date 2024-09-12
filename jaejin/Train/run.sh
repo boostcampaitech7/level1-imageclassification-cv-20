@@ -1,0 +1,25 @@
+
+ 
+variable1="Resnet"
+variable2="18"
+python baseline_model_down.py "$variable1" "$variable2"
+variable2="50"
+python baseline_model_down.py "$variable1" "$variable2"
+variable2="101"
+python baseline_model_down.py "$variable1" "$variable2"
+
+variable1="DenseNet"
+variable2="n"
+python baseline_model_down.py "$variable1" "$variable2"
+variable1="Inception"
+python baseline_model_down.py "$variable1" "$variable2"
+variable1="MobileNet"
+python baseline_model_down.py "$variable1" "$variable2"
+variable1="EfficientNet"
+python baseline_model_down.py "$variable1" "$variable2"
+
+variable1="ViT"
+variable2="B/16"
+python baseline_model_down.py "$variable1" "$variable2"
+variable2="L/16"
+python baseline_model_down.py "$variable1" "$variable2"
