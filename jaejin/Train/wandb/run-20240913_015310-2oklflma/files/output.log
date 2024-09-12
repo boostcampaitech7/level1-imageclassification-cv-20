@@ -1,0 +1,5 @@
+Epoch: 1, Train Loss: 0.507, Valid Loss: 0.297925, Accuracy: 0.92
+Epoch: 2, Train Loss: 0.349, Valid Loss: 0.240653, Accuracy: 0.93
+Epoch: 3, Train Loss: 0.337, Valid Loss: 0.214163, Accuracy: 0.94
+Epoch: 4, Train Loss: 0.274, Valid Loss: 0.194783, Accuracy: 0.94
+Epoch: 5, Train Loss: 0.187, Valid Loss: 0.191216, Accuracy: 0.94

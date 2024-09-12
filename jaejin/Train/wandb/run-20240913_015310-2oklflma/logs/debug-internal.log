@@ -1,0 +1,18 @@
+{"time":"2024-09-13T01:53:10.028804041+09:00","level":"INFO","msg":"using version","core version":"0.18.0"}
+{"time":"2024-09-13T01:53:10.028823718+09:00","level":"INFO","msg":"created symlink","path":"/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/jaejin/Train/wandb/run-20240913_015310-2oklflma/logs/debug-core.log"}
+{"time":"2024-09-13T01:53:10.028868683+09:00","level":"INFO","msg":"using version","core version":"0.18.0"}
+{"time":"2024-09-13T01:53:10.02887537+09:00","level":"INFO","msg":"created symlink","path":"/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/jaejin/Train/wandb/run-20240913_015310-2oklflma/logs/debug-core.log"}
+{"time":"2024-09-13T01:53:10.030060947+09:00","level":"INFO","msg":"created new stream","id":"2oklflma"}
+{"time":"2024-09-13T01:53:10.030102741+09:00","level":"INFO","msg":"stream: started","id":"2oklflma"}
+{"time":"2024-09-13T01:53:10.03012396+09:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"2oklflma"}}
+{"time":"2024-09-13T01:53:10.030286269+09:00","level":"INFO","msg":"handler: started","stream_id":{"value":"2oklflma"}}
+{"time":"2024-09-13T01:53:10.030307933+09:00","level":"INFO","msg":"sender: started","stream_id":{"value":"2oklflma"}}
+{"time":"2024-09-13T01:53:10.361319021+09:00","level":"INFO","msg":"wandb-core","!BADKEY":null}
+{"time":"2024-09-13T01:53:10.361878236+09:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-09-13T01:53:37.016944055+09:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-09-13T01:53:37.017148609+09:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-09-13T01:53:39.574477977+09:00","level":"INFO","msg":"stream: closing","id":"2oklflma"}
+{"time":"2024-09-13T01:53:39.574512097+09:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"2oklflma"}}
+{"time":"2024-09-13T01:53:39.574534985+09:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"2oklflma"}}
+{"time":"2024-09-13T01:53:39.57457225+09:00","level":"INFO","msg":"sender: closed","stream_id":{"value":"2oklflma"}}
+{"time":"2024-09-13T01:53:39.574962868+09:00","level":"INFO","msg":"stream: closed","id":"2oklflma"}
