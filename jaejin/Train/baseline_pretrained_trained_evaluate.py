@@ -242,7 +242,7 @@ def main(model_name):
     
     train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=50, device=device)
     
-    final_accuracy = evaluate_model(model, val_loader, device)
+    final_accuracy = evaluate_model(model, val_loader, device=device)
     print(f"Final {model_name} accuracy: {final_accuracy:.4f}")
     wandb.log({f"{model_name}_final_accuracy": final_accuracy})
 
