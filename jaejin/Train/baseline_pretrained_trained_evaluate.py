@@ -56,6 +56,13 @@ class CustomDataset(Dataset):
             return image, target  # 변환된 이미지와 레이블을 튜플 형태로 반환합니다. 
         
 def save_model(epoch, loss, model_name, model):
+    global dir
+    global traindata_dir
+    global traindata_info_file
+    global save_result_path
+    global lowest_val_loss
+    global val_losses
+    global best_models
     # 모델 저장 경로 설정
     os.makedirs(save_result_path+"/"+model_name, exist_ok=True)
 
@@ -235,7 +242,7 @@ def main(model_name):
     
     train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=50, device=device)
     
-    final_accuracy = evaluate_model(model, val_loader, device)
+    final_accuracy = evaluate_model(model, val_loader, device=device)
     print(f"Final {model_name} accuracy: {final_accuracy:.4f}")
     wandb.log({f"{model_name}_final_accuracy": final_accuracy})
 
