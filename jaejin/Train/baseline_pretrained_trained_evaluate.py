@@ -56,6 +56,13 @@ class CustomDataset(Dataset):
             return image, target  # 변환된 이미지와 레이블을 튜플 형태로 반환합니다. 
         
 def save_model(epoch, loss, model_name, model):
+    global dir
+    global traindata_dir
+    global traindata_info_file
+    global save_result_path
+    global lowest_val_loss
+    global val_losses
+    global best_models
     # 모델 저장 경로 설정
     os.makedirs(save_result_path+"/"+model_name, exist_ok=True)
 
@@ -110,9 +117,9 @@ def get_model_and_transforms(model_name):
         model = models.mobilenet_v2(weights=weights)
         preprocess = weights.transforms()
 
-    elif model_name == "efficientnet_b0":
-        weights = models.EfficientNet_B0_Weights.DEFAULT
-        model = models.efficientnet_b0(weights=weights)
+    elif model_name == "efficientnet_b1":
+        weights = models.EfficientNet_B1_Weights.DEFAULT
+        model = models.efficientnet_b1(weights=weights)
         preprocess = weights.transforms()
 
     elif model_name == "vit_b_16":
