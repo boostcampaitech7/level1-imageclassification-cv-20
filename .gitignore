@@ -1,2 +1,4 @@
 **/train_result/
 **/data
+**/wandb/*
+**/bpteRun

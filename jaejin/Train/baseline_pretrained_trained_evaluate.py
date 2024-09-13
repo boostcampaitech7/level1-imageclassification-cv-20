@@ -56,6 +56,13 @@ class CustomDataset(Dataset):
             return image, target  # 변환된 이미지와 레이블을 튜플 형태로 반환합니다. 
         
 def save_model(epoch, loss, model_name, model):
+    global dir
+    global traindata_dir
+    global traindata_info_file
+    global save_result_path
+    global lowest_val_loss
+    global val_losses
+    global best_models
     # 모델 저장 경로 설정
     os.makedirs(save_result_path+"/"+model_name, exist_ok=True)
 
