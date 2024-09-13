@@ -8,7 +8,4 @@ jaejin/Train/__pycache__/functions.cpython-310.pyc
 jaejin/Train/wandb/debug.log
 jaejin/Train/wandb/debug-internal.log
 jaejin/Train/wandb/latest-run
-<<<<<<< HEAD
 jaejin/Train/bpteRun.sh
-=======
->>>>>>> 5746165b3df018b05271b3502b75c1f300814721
