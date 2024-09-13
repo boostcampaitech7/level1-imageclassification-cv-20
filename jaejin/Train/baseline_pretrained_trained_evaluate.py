@@ -117,9 +117,9 @@ def get_model_and_transforms(model_name):
         model = models.mobilenet_v2(weights=weights)
         preprocess = weights.transforms()
 
-    elif model_name == "efficientnet_b0":
-        weights = models.EfficientNet_B0_Weights.DEFAULT
-        model = models.efficientnet_b0(weights=weights)
+    elif model_name == "efficientnet_b1":
+        weights = models.EfficientNet_B1_Weights.DEFAULT
+        model = models.efficientnet_b1(weights=weights)
         preprocess = weights.transforms()
 
     elif model_name == "vit_b_16":
