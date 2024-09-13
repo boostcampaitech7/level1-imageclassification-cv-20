@@ -1,4 +1,6 @@
 **/train_result/
 **/data
-**/wandb/*
+**/wandb
+**/wandb/latest-run
+**/wandb/debug*
 **/bpteRun
