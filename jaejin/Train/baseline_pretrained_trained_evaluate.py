@@ -131,6 +131,21 @@ def get_model_and_transforms(model_name):
         weights = models.ViT_L_16_Weights.DEFAULT
         model = models.vit_l_16(weights=weights)
         preprocess = weights.transforms()
+
+    elif model_name == "convnext_base":
+        weights = models.ConvNeXt_Base_Weights.DEFAULT
+        model = models.convnext_base(weights=weights)
+        preprocess = weights.transforms()
+
+    elif model_name == "convnext_large":
+        weights = models.ConvNeXt_Large_Weights.DEFAULT
+        model = models.convnext_large(weights=weights)
+        preprocess = weights.transforms()
+
+    elif model_name == "convnext_tiny":
+        weights = models.ConvNeXt_Tiny_Weights.DEFAULT
+        model = models.convnext_tiny(weights=weights)
+        preprocess = weights.transforms()
     else:
         raise ValueError(f"Unsupported model: {model_name}")
     
@@ -213,7 +228,11 @@ def main(model_name,model_rl):
         transform_type = "albumentations"
         )
     
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"\nTraining and evaluating {model_name}")
+    model, preprocess = get_model_and_transforms(model_name)
+    model = model.to(device)
+    
     data_transforms = A.Compose([
         A.Resize(224, 224), 
         A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), 
@@ -243,10 +262,7 @@ def main(model_name,model_rl):
     )    
       
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"\nTraining and evaluating {model_name}")
-    model, _ = get_model_and_transforms(model_name)
-    model = model.to(device)
+    
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr= model_rl)
