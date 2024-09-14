@@ -35,6 +35,14 @@ elif name == "ViT":
     else:
         print("wrong version!!!")
         sys.exit(0)
+elif name == "convnext_base":
+    M = models.convnext_base(weights=models.ConvNeXt_Base_Weights.DEFAULT)
+
+elif name == "convnext_large":
+    M = models.convnext_large(weights=models.ConvNeXt_Large_Weights.DEFAULT)
+
+elif name == "convnext_tiny":
+    M = models.convnext_tiny(weights=models.ConvNeXt_Tiny_Weights.DEFAULT)
 else:
     print("wrong version!!!")
     sys.exit(0)
