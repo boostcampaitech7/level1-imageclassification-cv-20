@@ -81,7 +81,7 @@ def save_model(epoch, loss, model_name, model,model_rl=3e-4):
     # 가장 낮은 손실의 모델 저장
     if loss < lowest_val_loss:
         lowest_val_loss = loss
-        best_model_path = os.path.join(save_result_path+"/"+model_name, model_name+str(model_rl)+'.pt')
+        best_model_path = os.path.join(save_result_path+"/"+model_name, model_name+str(model_rl)+"_Ag_.pt")
         torch.save(model.state_dict(), best_model_path)
         print(f"Save {epoch}epoch result. Loss = {loss:.4f}")
 
@@ -212,7 +212,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
 
 def main(model_name,model_rl):
 
-    wandb.init(project="model_comparison", name=model_name+"_rl_"+str(model_rl))
+    wandb.init(project="model_comparison", name=model_name+"_rl_"+str(model_rl)+"_Ag_")
 
     train_info = pd.read_csv(traindata_info_file)
     train_df, val_df = train_test_split(
@@ -234,6 +234,28 @@ def main(model_name,model_rl):
     model = model.to(device)
     
     data_transforms = A.Compose([
+    # Geometric transformations
+        A.Rotate(limit=10, p=0.5),
+        A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
+        A.ElasticTransform(alpha=1, sigma=10, p=0.5),
+        
+        # # Morphological transformations
+        # A.Erosion(kernel=(1, 2), p=0.5),
+        # A.Dilation(kernel=(1, 2), p=0.5),
+
+        # Noise and blur
+        A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
+        A.MotionBlur(blur_limit=(3, 7), p=0.5),                
+
+        # Sketch-specific augmentations
+        A.CoarseDropout(max_holes=8, max_height=16, max_width=16, fill_value=255, p=0.5),
+
+        # Advanced techniques
+        A.OneOf([
+            # A.AutoContrast(p=0.5),
+            A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5),
+        ], p=0.5),
+        A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
         A.Resize(224, 224), 
         A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), 
         ToTensorV2() 
