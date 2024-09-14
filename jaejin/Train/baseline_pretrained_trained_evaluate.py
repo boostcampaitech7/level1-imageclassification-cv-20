@@ -55,7 +55,7 @@ class CustomDataset(Dataset):
             target = self.targets[index]  # 해당 이미지의 레이블
             return image, target  # 변환된 이미지와 레이블을 튜플 형태로 반환합니다. 
         
-def save_model(epoch, loss, model_name, model):
+def save_model(epoch, loss, model_name, model,model_rl=3e-4):
     global dir
     global traindata_dir
     global traindata_info_file
@@ -67,7 +67,7 @@ def save_model(epoch, loss, model_name, model):
     os.makedirs(save_result_path+"/"+model_name, exist_ok=True)
 
     # 현재 에폭 모델 저장
-    current_model_path = os.path.join(save_result_path+"/"+model_name, f'model_epoch_{epoch}_loss_{loss:.4f}.pt')
+    current_model_path = os.path.join(save_result_path+"/"+model_name, f'model_epoch_{epoch}_loss_{loss:.4f}_rl{model_rl}.pt')
     torch.save(model.state_dict(), current_model_path)
 
     # 최상위 3개 모델 관리
@@ -81,7 +81,7 @@ def save_model(epoch, loss, model_name, model):
     # 가장 낮은 손실의 모델 저장
     if loss < lowest_val_loss:
         lowest_val_loss = loss
-        best_model_path = os.path.join(save_result_path+"/"+model_name, model_name+'.pt')
+        best_model_path = os.path.join(save_result_path+"/"+model_name, model_name+str(model_rl)+'.pt')
         torch.save(model.state_dict(), best_model_path)
         print(f"Save {epoch}epoch result. Loss = {loss:.4f}")
 
@@ -153,8 +153,12 @@ def evaluate_model(model, data_loader,criterion, device):
 
     return correct / total
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, device):
-    
+def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, device, model_rl):
+
+    global lowest_val_loss
+    global val_losses
+    global best_models
+    patience = 5
     for epoch in range(num_epochs):
         model.train()
         running_loss = 0.0
@@ -177,12 +181,23 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
             "train_loss": train_loss,
             "val_accuracy": val_accuracy
         })
-        save_model(epoch, loss, model_name, model)
+        # Early Stopping
+        if train_loss < lowest_val_loss:
+            lowest_val_loss = train_loss
+            early_stop_counter = 0  # 검증 손실이 감소하면 카운터 리셋
+            print(f"Lowest loss updated to {lowest_val_loss:.4f}. Early stop counter reset to 0.")
+        else:
+            early_stop_counter += 1  # 감소하지 않으면 카운터 증가
+            if early_stop_counter >= patience:
+                print(f"Early stopping at epoch {epoch+1}.")
+                break
+
+        save_model(epoch, loss, model_name, model,model_rl=model_rl)
         print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Val Accuracy: {val_accuracy:.4f}")
 
-def main(model_name):
+def main(model_name,model_rl):
 
-    wandb.init(project="model_comparison", name=model_name)
+    wandb.init(project="model_comparison", name=model_name+"_rl_"+str(model_rl))
 
     train_info = pd.read_csv(traindata_info_file)
     train_df, val_df = train_test_split(
@@ -234,15 +249,15 @@ def main(model_name):
     model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr= model_rl)
 
-    pretrained_accuracy = evaluate_model(model, val_loader, criterion, device)
-    print(f"Pretrained {model_name} accuracy: {pretrained_accuracy:.4f}")
-    wandb.log({f"{model_name}_pretrained_accuracy": pretrained_accuracy})
+    pretrained_accuracy = evaluate_model(model, val_loader, criterion, device=device)
+    print(f"Pretrained {model_name}{model_rl} accuracy: {pretrained_accuracy:.4f}")
+    wandb.log({f"{model_name}{model_rl}_pretrained_accuracy": pretrained_accuracy})
     
-    train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=50, device=device)
+    train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=50, device=device,model_rl=model_rl)
     
-    final_accuracy = evaluate_model(model, val_loader, device=device)
+    final_accuracy = evaluate_model(model, val_loader,criterion,device=device)
     print(f"Final {model_name} accuracy: {final_accuracy:.4f}")
     wandb.log({f"{model_name}_final_accuracy": final_accuracy})
 
@@ -250,8 +265,10 @@ def main(model_name):
     
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python train_models.py <model_name> <model_version>")
+    if len(sys.argv) != 3:
+        print("Usage: python train_models.py <model_name> <model_rl>")
         sys.exit(1)
     model_name = sys.argv[1]
-    main(model_name)
+    model_rl = sys.argv[2]
+    main(model_name,float(model_rl))
+    
