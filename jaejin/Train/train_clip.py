@@ -105,7 +105,7 @@ scheduler_gamma = 0.99  # 학습률을 현재의 10%로 감소
 
 # 한 epoch당 step 수 계산
 steps_per_epoch = len(train_loader)
-lr = 3e-7
+lr = 3e-6
 optimizer = optim.Adam(model.parameters(), lr= lr)
 
 # 2 epoch마다 학습률을 감소시키는 스케줄러 선언
