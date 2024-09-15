@@ -4,3 +4,4 @@
 **/latest-run
 **/wandb/debug*
 **/bpteRun
+**/__pycache__
