@@ -19,7 +19,7 @@ from albumentations.pytorch import ToTensorV2
 from transformers import CLIPProcessor
 from PIL import Image
 import matplotlib.pyplot as plt
-
+import wandb
 
 def get_imagenet_ditction(mini=True,values=True):
     if mini:
@@ -387,6 +387,7 @@ class CLIP_Trainer:
         result_path: str,
         processor: CLIPProcessor,
         mini_values: list,
+        lr: float,
         patience: int = 5  # 조기 종료를 위한 patience 설정
         
     ):
@@ -414,7 +415,7 @@ class CLIP_Trainer:
 
         self.processor = processor
         self.mini_values = mini_values
-
+        self.lr = lr
     def accuracy_fn(self, outputs, targets):
         """정확도 계산 함수"""
         _, preds = torch.max(outputs, 1)
@@ -452,11 +453,66 @@ class CLIP_Trainer:
         print(f"Model loaded from {model_path}")
 
     def clip_loss(self,similarity: torch.Tensor) -> torch.Tensor:
-        caption_loss = F.cross_entropy(similarity, torch.arange(similarity.shape[0]).to(similarity.device))
-        image_loss = F.cross_entropy(similarity.T, torch.arange(similarity.shape[0]).to(similarity.device))    
-        return (caption_loss + image_loss) / 2.0
+        image_loss = F.cross_entropy(similarity, torch.arange(similarity.shape[0]).to(similarity.device))
+        text_loss = F.cross_entropy(similarity.T, torch.arange(similarity.shape[0]).to(similarity.device))    
+        return (text_loss + image_loss) / 2.0
+    
+    # def clip_loss(self, similarity):
+    #     caption_loss = self.contrastive_loss(similarity, dim=0)
+    #     image_loss = self.contrastive_loss(similarity, dim=1)
+    #     return (caption_loss + image_loss) / 2.0
 
+    # def contrastive_loss(self, logits, dim):
+    #     neg_ce = torch.diag(F.log_softmax(logits, dim=dim))
+    #     return -neg_ce.mean()
+    
     def train_epoch(self) -> (float, float):
+        # 한 에폭 동안의 훈련을 진행
+        self.model.train()
+        self.model.to(self.device)
+        total_loss = 0.0
+        corrects = 0
+        total = 0
+        for param in self.model.text_model.parameters():
+            param.requires_grad = False
+            
+        progress_bar = tqdm(self.train_loader, desc="Training", leave=False)
+        for images, targets in progress_bar:
+
+            self.optimizer.zero_grad()#
+            inputs = self.processor(text=targets, images=images, return_tensors="pt", padding=True).to(self.device)
+        
+            outputs = self.model(**inputs)
+            logits_per_image = outputs.logits_per_image 
+            logits_per_text = outputs.logits_per_text
+            #probs = logits_per_image.softmax(dim=-1) 
+            #p= torch.argmax(probs,dim=1)                 
+            #tar = torch.tensor([self.mini_values.index(ind) for ind in targets],device=self.device)
+            loss = self.clip_loss(logits_per_image)     
+
+            loss.backward()
+            self.optimizer.step()
+            total_loss += loss.item()
+            batch_len = len(logits_per_image)
+            ground_truth = torch.arange(batch_len).long().to(logits_per_image.device)
+
+            image_preds = torch.argmax(logits_per_image, dim=1)  # (batch_size,)
+            text_preds = torch.argmax(logits_per_text, dim=1)    # (batch_size,)
+
+            image_acc = (image_preds == ground_truth).float().mean().item()
+            #text_acc = (text_preds == ground_truth).float().mean().item()
+
+            count = image_acc* batch_len    
+            corrects += count
+            total += batch_len
+            progress_bar.set_postfix(loss=loss.item())
+
+
+        avg_loss = total_loss / len(self.train_loader)
+        accuracy = corrects / total
+        return avg_loss, accuracy
+    '''
+        def train_epoch(self) -> (float, float):
         # 한 에폭 동안의 훈련을 진행
         self.model.train()
         self.model.to(self.device)
@@ -474,13 +530,15 @@ class CLIP_Trainer:
         
             outputs = self.model(**inputs)
             logits_per_image = outputs.logits_per_image 
+            logits_per_text = outputs.logits_per_text
             probs = logits_per_image.softmax(dim=-1) 
             p= torch.argmax(probs,dim=1)
                  
             tar = torch.tensor([self.mini_values.index(ind) for ind in targets],device=self.device)
             labels_one_hot = F.one_hot(tar, num_classes=len(self.mini_values)).float().to(self.device)
 
-            loss = self.loss_fn(logits_per_image, labels_one_hot)
+            # 이미지와 텍스트 각각의 손실을 평균하여 최종 손실 계산
+            total_loss = (loss_img + loss_text) / 2
             loss.backward()
             self.optimizer.step()
             total_loss += loss.item()
@@ -495,6 +553,7 @@ class CLIP_Trainer:
         avg_loss = total_loss / len(self.train_loader)
         accuracy = corrects / total
         return avg_loss, accuracy
+    '''
 
     def validate(self) -> (float, float):
         # 모델의 검증을 진행
@@ -512,14 +571,16 @@ class CLIP_Trainer:
                 logits_per_image = outputs.logits_per_image 
                 probs = logits_per_image.softmax(dim=-1) 
                 p= torch.argmax(probs,dim=1)
-
+                    
                 tar = torch.tensor([self.mini_values.index(ind) for ind in targets],device=self.device)
                 labels_one_hot = F.one_hot(tar, num_classes=len(self.mini_values)).float().to(self.device)
 
                 loss = self.loss_fn(logits_per_image, labels_one_hot)
                 total_loss += loss.item()
 
-                count = torch.sum(p == tar).item()       
+                
+                count = torch.sum(p == tar).item()        
+                # print(count/len(tar)*100)
                 corrects += count
                 total += len(tar)
                 progress_bar.set_postfix(loss=loss.item())
@@ -532,13 +593,24 @@ class CLIP_Trainer:
         if load_model and model_path:
             self.load_model(model_path)
 
+        wandb.init(project="model_comparison", name="clip_rl_"+str(self.lr)+"_get500class")
+        val_loss, val_acc = self.validate()
+        wandb.log({
+            "epoch": 0,
+            "train_loss": val_loss,
+            "val_accuracy": val_acc
+             })
         # 전체 훈련 과정을 관리
         for epoch in range(self.epochs):
             print(f"Epoch {epoch+1}/{self.epochs}")
 
             train_loss, train_acc = self.train_epoch()
             val_loss, val_acc = self.validate()
-
+            wandb.log({
+            "epoch": epoch,
+            "train_loss": train_loss,
+            "val_accuracy": val_acc
+             })
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc:.4f}")
             print(f"Epoch {epoch+1}, Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_acc:.4f}\n")
 
@@ -567,6 +639,7 @@ class CLIP_Trainer:
             # 매 에폭마다 그래프 시각화
             self.plot_results()
 
+        wandb.finish()
         # 최종 그래프 시각화 (전체 학습이 끝난 후에도 그래프를 그릴 수 있음)
         self.plot_results()
 

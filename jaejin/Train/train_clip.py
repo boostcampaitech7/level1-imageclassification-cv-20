@@ -15,7 +15,7 @@ import os
 
 
 # 학습 데이터의 경로와 정보를 가진 파일의 경로를 설정
-dir="/data/ephemeral/home/cv-20-proj1/level1-imageclassification-cv-20"
+dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
 traindata_dir = dir+"/data/train"
 traindata_info_file = dir+"/data/train.csv"
 
@@ -105,8 +105,8 @@ scheduler_gamma = 0.99  # 학습률을 현재의 10%로 감소
 
 # 한 epoch당 step 수 계산
 steps_per_epoch = len(train_loader)
-print(steps_per_epoch)
-optimizer = AdamW(model.parameters(), lr=5e-6)
+lr = 3e-6
+optimizer = optim.Adam(model.parameters(), lr= lr)
 
 # 2 epoch마다 학습률을 감소시키는 스케줄러 선언
 epochs_per_lr_decay = 5
@@ -133,7 +133,8 @@ trainer = CLIP_Trainer(
     processor=processor,
     epochs=100,
     result_path=save_result_path,
-    mini_values=mini_values
+    mini_values=mini_values,
+    lr=lr
 )
 
 # 모델 학습.
