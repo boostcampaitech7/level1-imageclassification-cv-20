@@ -16,7 +16,7 @@ from config import config
 
 # 학습에 사용할 장비를 선택.
 # torch라이브러리에서 gpu를 인식할 경우, cuda로 설정.
-device = config.DEVICE
+device = config.DEVICE if torch.cuda.is_available() else 'cpu'
 
 # 학습 데이터의 경로와 정보를 가진 파일의 경로를 설정.
 model_name = config.MODEL_NAME
@@ -36,7 +36,8 @@ num_classes = config.NUM_CLASSES
 train_df, val_df = train_test_split(
     train_info, 
     test_size=1-config.TRAIN_RATIO,
-    stratify=train_info['target']
+    stratify=train_info['target'],
+    random_state=20
 )
 
 # 학습에 사용할 Transform을 선언.

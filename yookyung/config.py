@@ -9,12 +9,12 @@ class Config:
     
     # 모델 관련
     MODEL_TYPE = 'timm' # torchvision, timm
-    MODEL_NAME = 'densenet121'
+    MODEL_NAME = 'convnextv2_base'
     PRETRAINED = True
     NUM_CLASSES = 500
     
     # 훈련 관련
-    EPOCHS = 30
+    EPOCHS = 10
     LEARNING_RATE = 0.001
     OPTIMIZER = "adam"
 
@@ -28,14 +28,14 @@ class Config:
     }
 
     # 스케쥴러 관련
-    SCHEDULER = "cosine" # cosine, step
+    SCHEDULER = "step" # cosine, step
     SCHEDULER_PARAMS = {
         "step": {
-            "step_size": 2,  # epochs
-            "gamma": 0.1
+            "step_size": 2,  # 학습률 감소시킬 에폭 주기
+            "gamma": 0.9 # 이전학습률 * gamma 로 학습률 정의
         },
         "cosine": {
-            "T_max": 10,  # 전체 주기
+            "T_max": 10,  # 전체 주기 
             "eta_min": 1e-6  # 최소 학습률
         }
     }
