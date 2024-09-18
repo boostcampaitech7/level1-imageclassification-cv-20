@@ -12,29 +12,29 @@ from src.trainer import *
 from models.models import *
 from models.loss import *
 
+from config import config
+
 # 학습에 사용할 장비를 선택.
 # torch라이브러리에서 gpu를 인식할 경우, cuda로 설정.
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = config.DEVICE
 
 # 학습 데이터의 경로와 정보를 가진 파일의 경로를 설정.
-model = 'resnet18'
-traindata_dir = "./data/train"
-traindata_info_file = "./data/train.csv"
-save_result_path = f"./train_result/{model}"
+model_name = config.MODEL_NAME
+traindata_dir = config.TRAIN_DATA_DIR
+traindata_info_file = os.path.join(traindata_dir, '../train.csv')
+save_result_path = config.CHECKPOINT_DIR
 
 if not os.path.exists(save_result_path):
     os.makedirs(save_result_path)
 
 # 학습 데이터의 class, image path, target에 대한 정보가 들어있는 csv파일을 읽기.
 train_info = pd.read_csv(traindata_info_file)
-
-# 총 class의 수를 측정.
-num_classes = len(train_info['target'].unique())
+num_classes = config.NUM_CLASSES
 
 # 각 class별로 8:2의 비율이 되도록 학습과 검증 데이터를 분리.
 train_df, val_df = train_test_split(
     train_info, 
-    test_size=0.2,
+    test_size=1-config.TRAIN_RATIO,
     stratify=train_info['target']
 )
 
@@ -60,52 +60,33 @@ val_dataset = CustomDataset(
 # 학습에 사용할 DataLoader를 선언.
 train_loader = DataLoader(
     train_dataset, 
-    batch_size=64, 
+    batch_size=config.BATCH_SIZE, 
     shuffle=True
 )
 val_loader = DataLoader(
     val_dataset, 
-    batch_size=64, 
+    batch_size=config.BATCH_SIZE, 
     shuffle=False
 )
 
 # 학습에 사용할 Model을 선언.
 model_selector = ModelSelector(
-    model_type='timm', 
-    num_classes=num_classes,
-    model_name='resnet18', 
-    pretrained=True
+    model_type=config.MODEL_TYPE, 
+    num_classes=config.NUM_CLASSES,
+    model_name=config.MODEL_NAME, 
+    pretrained=config.PRETRAINED
 )
-model = model_selector.get_model()
 
-# 선언된 모델을 학습에 사용할 장비로 셋팅.
+model = model_selector.get_model()
 model.to(device)
 
 # 학습에 사용할 optimizer를 선언하고, learning rate를 지정
-optimizer = optim.Adam(
-    model.parameters(), 
-    lr=0.001
-)
+optimizer = get_optimizer(model.parameters())
+scheduler = get_scheduler(config.SCHEDULER, optimizer, steps_per_epoch=len(train_loader))
 
-# 스케줄러 초기화
-scheduler_step_size = 30  # 매 30step마다 학습률 감소
-scheduler_gamma = 0.1  # 학습률을 현재의 10%로 감소
-
-# 한 epoch당 step 수 계산
-steps_per_epoch = len(train_loader)
-
-# 2 epoch마다 학습률을 감소시키는 스케줄러 선언
-epochs_per_lr_decay = 2
-scheduler_step_size = steps_per_epoch * epochs_per_lr_decay
-
-scheduler = optim.lr_scheduler.StepLR(
-    optimizer, 
-    step_size=scheduler_step_size, 
-    gamma=scheduler_gamma
-)
 
 # 학습에 사용할 Loss를 선언.
-loss_fn = Loss()
+loss_fn = get_loss_function()
 
 # 앞서 선언한 필요 class와 변수들을 조합해, 학습을 진행할 Trainer를 선언. 
 trainer = Trainer(
@@ -116,7 +97,7 @@ trainer = Trainer(
     optimizer=optimizer,
     scheduler=scheduler,
     loss_fn=loss_fn, 
-    epochs=60,
+    epochs=config.EPOCHS,
     result_path=save_result_path
 )
 

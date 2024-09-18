@@ -1,33 +1,23 @@
+from typing import Tuple, Any, Callable, List, Optional, Union
+
 import torch.nn as nn
 import torch
 from torchvision import models
 import timm
 
-class SimpleCNN(nn.Module):
-    """
-    간단한 CNN 아키텍처를 정의하는 클래스.
-    """
-    def __init__(self, num_classes: int):
-        super(SimpleCNN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(128 * 4 * 4, 512)
-        self.fc2 = nn.Linear(512, num_classes)
-        self.relu = nn.ReLU()
+from config import config
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        
-        # 순전파 함수 정의
-        x = self.pool(self.relu(self.conv1(x)))
-        x = self.pool(self.relu(self.conv2(x)))
-        x = self.pool(self.relu(self.conv3(x)))
-        x = torch.flatten(x, 1)
-        x = self.relu(self.fc1(x))
-        x = self.fc2(x)
-        
-        return x
+def get_model() -> nn.Module:
+    """
+    Config에서 설정을 읽어 모델을 생성하고 반환하는 함수.
+    """
+    model_selector = ModelSelector(
+        model_type=config.MODEL_TYPE,
+        model_name=config.MODEL_NAME,
+        num_classes=config.NUM_CLASSES,
+        pretrained=config.PRETRAINED
+    )
+    return model_selector.get_model()
 
 class TorchvisionModel(nn.Module):
     """
@@ -83,19 +73,18 @@ class ModelSelector:
     def __init__(
         self, 
         model_type: str, 
-        num_classes: int, 
+        model_name: str,
+        num_classes: int,
+        pretrained: bool,
         **kwargs
     ):
         
         # 모델 유형에 따라 적절한 모델 객체를 생성
-        if model_type == 'simple':
-            self.model = SimpleCNN(num_classes=num_classes)
-        
-        elif model_type == 'torchvision':
-            self.model = TorchvisionModel(num_classes=num_classes, **kwargs)
+        if model_type == 'torchvision':
+            self.model = TorchvisionModel(model_name, num_classes, pretrained)
         
         elif model_type == 'timm':
-            self.model = TimmModel(num_classes=num_classes, **kwargs)
+            self.model = TimmModel(model_name, num_classes, pretrained)
         
         else:
             raise ValueError("Unknown model type specified.")
@@ -104,3 +93,4 @@ class ModelSelector:
 
         # 생성된 모델 객체 반환
         return self.model
+    

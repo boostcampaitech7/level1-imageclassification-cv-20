@@ -1,4 +1,5 @@
 import os
+from typing import Tuple, Any, Callable, List, Optional, Union
 
 import torch.nn as nn
 import torch
@@ -9,6 +10,8 @@ from torch.utils.data import DataLoader, Dataset
 from src.dataset import *
 from src.transform import *
 from models.models import *
+
+from config import config
 
 # 모델 추론을 위한 함수
 def inference(
@@ -37,10 +40,10 @@ def inference(
     return predictions
 
 # 추론 데이터의 경로와 정보를 가진 파일의 경로를 설정.
-model = 'resnet18'
-testdata_dir = "./data/test"
-testdata_info_file = "./data/test.csv"
-save_result_path = f"./train_result/{model}"
+model_name = config.MODEL_NAME
+testdata_dir = config.TEST_DATA_DIR
+testdata_info_file = os.path.join(testdata_dir, '../test.csv')
+save_result_path = config.CHECKPOINT_DIR
 
 if not os.path.exists(save_result_path):
     os.makedirs(save_result_path)
@@ -49,8 +52,7 @@ if not os.path.exists(save_result_path):
 test_info = pd.read_csv(testdata_info_file)
 
 # 총 class 수.
-num_classes = 500
-
+num_classes = config.NUM_CLASSES
 
 # 추론에 사용할 Transform을 선언.
 transform_selector = TransformSelector(
@@ -69,7 +71,7 @@ test_dataset = CustomDataset(
 # 추론에 사용할 DataLoader를 선언.
 test_loader = DataLoader(
     test_dataset, 
-    batch_size=64, 
+    batch_size=config.BATCH_SIZE, 
     shuffle=False,
     drop_last=False
 )
@@ -77,13 +79,13 @@ test_loader = DataLoader(
 
 # 추론에 사용할 장비를 선택.
 # torch라이브러리에서 gpu를 인식할 경우, cuda로 설정.
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = config.DEVICE
 
 # 추론에 사용할 Model을 선언.
 model_selector = ModelSelector(
-    model_type='timm', 
-    num_classes=num_classes,
-    model_name='resnet18', 
+    model_type=config.MODEL_TYPE, 
+    num_classes=config.NUM_CLASSES,
+    model_name=config.MODEL_NAME, 
     pretrained=False
 )
 model = model_selector.get_model()
@@ -100,14 +102,13 @@ model.load_state_dict(
 # 테스트 함수 호출
 predictions = inference(
     model=model, 
-    device=device, 
+    device=config.DEVICE, 
     test_loader=test_loader
 )
 
 # 모든 클래스에 대한 예측 결과를 하나의 문자열로 합침
 test_info['target'] = predictions
 test_info = test_info.reset_index().rename(columns={"index": "ID"})
-test_info
 
 # DataFrame 저장
-test_info.to_csv(f"./output/{model}_output.csv", index=False)
+test_info.to_csv(f"{config.RESULT_DIR}/{model_name}_output.csv", index=False)

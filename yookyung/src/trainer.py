@@ -8,29 +8,30 @@ import torch.nn as nn
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader, Dataset
 
+from config import config
+from models.models import get_model
+from models.loss import get_loss_function
+from models.optimizer import get_optimizer
+from models.scheduler import get_scheduler
+
+
 class Trainer:
     def __init__(
         self, 
         model: nn.Module, 
-        device: torch.device, 
         train_loader: DataLoader, 
-        val_loader: DataLoader, 
-        optimizer: optim.Optimizer,
-        scheduler: optim.lr_scheduler,
-        loss_fn: torch.nn.modules.loss._Loss, 
-        epochs: int,
-        result_path: str
+        val_loader: DataLoader
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
-        self.model = model  # 훈련할 모델
-        self.device = device  # 연산을 수행할 디바이스 (CPU or GPU)
+        self.model = model.to(config.DEVICE)  # 훈련할 모델
+        self.device = config.DEVICE  # 연산을 수행할 디바이스 (CPU or GPU)
         self.train_loader = train_loader  # 훈련 데이터 로더
         self.val_loader = val_loader  # 검증 데이터 로더
-        self.optimizer = optimizer  # 최적화 알고리즘
-        self.scheduler = scheduler # 학습률 스케줄러
-        self.loss_fn = loss_fn  # 손실 함수
-        self.epochs = epochs  # 총 훈련 에폭 수
-        self.result_path = result_path  # 모델 저장 경로
+        self.optimizer = config.OPTIMIZER  # 최적화 알고리즘
+        self.scheduler = config.SCHEDULER # 학습률 스케줄러
+        self.loss_fn = config.LOSS  # 손실 함수
+        self.epochs = config.EPOCHS  # 총 훈련 에폭 수
+        self.result_path = config.CHECKPOINT_DIR # 모델 저장 경로
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
 
@@ -83,8 +84,7 @@ class Trainer:
         
         total_loss = 0.0
         progress_bar = tqdm(self.val_loader, desc="Validating", leave=False)
-        acc_count = 0
-        top_5_count = 0
+        
         with torch.no_grad():
             for images, targets in progress_bar:
                 images, targets = images.to(self.device), targets.to(self.device)
@@ -92,17 +92,8 @@ class Trainer:
                 loss = self.loss_fn(outputs, targets)
                 total_loss += loss.item()
                 progress_bar.set_postfix(loss=loss.item())
-                #print(sum(targets.cpu()==np.argmax(outputs.cpu(),axis=1)))
-                #print(np.argmax(outputs.cpu(),axis=1).shape)
-                acc_count += sum(targets.cpu()==np.argmax(outputs.cpu(),axis=1))
-                for index in range(len(targets)):
-                    top_5 = np.argsort(outputs.cpu()[index])[-5:]
-                    
-                    if any(targets.cpu()[index] in item for item in top_5):
-                        top_5_count+=1
-                        #print(top_5,targets.cpu()[index])
         
-        return total_loss / len(self.val_loader),acc_count/len(self.val_loader),top_5_count/len(self.val_loader)
+        return total_loss / len(self.val_loader)
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
@@ -115,3 +106,8 @@ class Trainer:
 
             self.save_model(epoch, val_loss)
             self.scheduler.step()
+
+
+def get_trainer(train_loader, val_loader) -> Trainer:
+    model = get_model()
+    return Trainer(model, train_loader, val_loader)
