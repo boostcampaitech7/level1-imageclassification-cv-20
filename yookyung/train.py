@@ -22,6 +22,7 @@ device = config.DEVICE
 model_name = config.MODEL_NAME
 traindata_dir = config.TRAIN_DATA_DIR
 traindata_info_file = os.path.join(traindata_dir, '../train.csv')
+traindata_info_file = os.path.abspath(traindata_info_file)
 save_result_path = config.CHECKPOINT_DIR
 
 if not os.path.exists(save_result_path):
@@ -77,28 +78,17 @@ model_selector = ModelSelector(
     pretrained=config.PRETRAINED
 )
 
-model = model_selector.get_model()
-model.to(device)
+# model = model_selector.get_model()
+# model.to(device)
 
-# 학습에 사용할 optimizer를 선언하고, learning rate를 지정
-optimizer = get_optimizer(model.parameters())
-scheduler = get_scheduler(config.SCHEDULER, optimizer, steps_per_epoch=len(train_loader))
+# # 학습에 사용할 optimizer를 선언하고, learning rate를 지정
+# optimizer = get_optimizer(model.parameters())
+# scheduler = get_scheduler(config.SCHEDULER, optimizer, steps_per_epoch=len(train_loader))
 
 
-# 학습에 사용할 Loss를 선언.
-loss_fn = get_loss_function()
+# # 학습에 사용할 Loss를 선언.
+# loss_fn = get_loss_function()
 
 # 앞서 선언한 필요 class와 변수들을 조합해, 학습을 진행할 Trainer를 선언. 
-trainer = Trainer(
-    model=model, 
-    device=device, 
-    train_loader=train_loader,
-    val_loader=val_loader, 
-    optimizer=optimizer,
-    scheduler=scheduler,
-    loss_fn=loss_fn, 
-    epochs=config.EPOCHS,
-    result_path=save_result_path
-)
-
+trainer = get_trainer(train_loader, val_loader) 
 trainer.train()

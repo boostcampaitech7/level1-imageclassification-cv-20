@@ -27,9 +27,9 @@ class Trainer:
         self.device = config.DEVICE  # 연산을 수행할 디바이스 (CPU or GPU)
         self.train_loader = train_loader  # 훈련 데이터 로더
         self.val_loader = val_loader  # 검증 데이터 로더
-        self.optimizer = config.OPTIMIZER  # 최적화 알고리즘
-        self.scheduler = config.SCHEDULER # 학습률 스케줄러
-        self.loss_fn = config.LOSS  # 손실 함수
+        self.optimizer = get_optimizer(model.parameters())  # 최적화 알고리즘
+        self.scheduler = get_scheduler(config.SCHEDULER, self.optimizer, steps_per_epoch=len(train_loader)) # 학습률 스케줄러
+        self.loss_fn = get_loss_function()  # 손실 함수
         self.epochs = config.EPOCHS  # 총 훈련 에폭 수
         self.result_path = config.CHECKPOINT_DIR # 모델 저장 경로
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트

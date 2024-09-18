@@ -43,6 +43,7 @@ def inference(
 model_name = config.MODEL_NAME
 testdata_dir = config.TEST_DATA_DIR
 testdata_info_file = os.path.join(testdata_dir, '../test.csv')
+testdata_info_file = os.path.abspath(testdata_info_file)
 save_result_path = config.CHECKPOINT_DIR
 
 if not os.path.exists(save_result_path):

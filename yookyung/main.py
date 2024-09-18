@@ -16,12 +16,12 @@ def main():
     # 학습만 진행
     if args.mode == 'train' or args.mode == 'all':
         print("Starting training process...")
-        train.train(device)  # train.py의 train 함수 실행
+        train.train()  # train.py의 train 함수 실행
 
     # 추론만 진행
     if args.mode == 'test' or args.mode == 'all':
         print("Starting inference process...")
-        test.test(device)  # test.py의 test 함수 실행
+        test.test()  # test.py의 test 함수 실행
 
 if __name__ == "__main__":
     main()

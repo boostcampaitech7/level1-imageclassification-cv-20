@@ -9,12 +9,12 @@ class Config:
     
     # 모델 관련
     MODEL_TYPE = 'timm' # torchvision, timm
-    MODEL_NAME = "resnet18"
+    MODEL_NAME = 'densenet121'
     PRETRAINED = True
     NUM_CLASSES = 500
     
     # 훈련 관련
-    EPOCHS = 50
+    EPOCHS = 30
     LEARNING_RATE = 0.001
     OPTIMIZER = "adam"
 
@@ -45,7 +45,6 @@ class Config:
     SEED = 20
     
     # 로깅 및 체크포인트
-    LOG_DIR = "./logs"
     CHECKPOINT_DIR = f"./yookyung/train_result/{MODEL_NAME}"
     SAVE_TOP_K = 3  # 저장할 최상위 모델 수
     
