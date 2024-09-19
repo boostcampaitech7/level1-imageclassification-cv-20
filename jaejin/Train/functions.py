@@ -399,11 +399,11 @@ class BaseTrainer:
         self.epochs = epochs  # 총 훈련 에폭 수
         self.result_path = result_path  # 모델 저장 경로
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
-        self.highest_val_acc = 0.0
+        self.highest_val_acc = 1e-10
         self.patience = patience  # 조기 종료를 위한 patience
         self.early_stop_counter = 0
         self.model_name = model_name
-
+        self.pre_best = "/1298y192eh72e1y2"
         # 학습 기록 저장을 위한 리스트
         self.train_losses = []
         self.val_losses = []
@@ -435,8 +435,11 @@ class BaseTrainer:
 
         # 가장 높은 acc의 모델 저장
         if acc > self.highest_val_acc:
-            self.highest_val_acc = acc
+            # self.highest_val_acc = acc
             best_model_path = os.path.join(self.result_path+"/"+self.model_name,f'{self.model_name}_Acc_{acc:.4f}_best_model.pt')
+            if os.path.exists(self.pre_best):
+                os.remove(self.pre_best)
+            self.pre_best = best_model_path
             torch.save(self.model.state_dict(), best_model_path)
             print(f"Save {epoch} epoch result. Acc = {acc:.4f} Loss = {loss:.4f}")
 
@@ -481,7 +484,6 @@ class BaseTrainer:
 
             # 모델 저장
             self.save_model(epoch=epoch+1, acc=val_acc, loss=val_loss)
-
             # Early Stopping
             if val_acc > self.highest_val_acc :
                 self.highest_val_acc = val_acc
@@ -496,11 +498,11 @@ class BaseTrainer:
             self.scheduler.step()
 
             # 매 에폭마다 그래프 시각화
-            self.plot_results()
+            #self.plot_results()
 
         wandb.finish()
         # 최종 그래프 시각화 (전체 학습이 끝난 후에도 그래프를 그릴 수 있음)
-        self.plot_results()  
+        # self.plot_results()  
 
     def plot_results(self):
         """학습 결과 시각화 (Loss & Accuracy)"""
