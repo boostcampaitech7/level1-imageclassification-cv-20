@@ -31,7 +31,7 @@ def main(model_name,model_rl,is_ag):
     print(f"\nTraining and evaluating {model_name}")
     model, preprocess = get_model_and_transforms(model_name)
     model = model.to(device)
-    
+
     if is_ag:
         data_transforms = A.Compose([
         # Geometric transformations
@@ -126,6 +126,6 @@ if __name__ == "__main__":
         sys.exit(1)
     model_name = sys.argv[1]
     model_rl = sys.argv[2]
-    is_ag = sys.argv[3]
-    main(model_name,float(model_rl),bool(is_ag))
+    is_ag = sys.argv[3] == 'True'
+    main(model_name,float(model_rl),is_ag)
     
