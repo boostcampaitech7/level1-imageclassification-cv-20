@@ -80,7 +80,7 @@ test_loader = DataLoader(
 
 # 추론에 사용할 장비를 선택.
 # torch라이브러리에서 gpu를 인식할 경우, cuda로 설정.
-device = config.DEVICE
+device = config.DEVICE if torch.cuda.is_available() else 'cpu'
 
 # 추론에 사용할 Model을 선언.
 model_selector = ModelSelector(
@@ -112,4 +112,4 @@ test_info['target'] = predictions
 test_info = test_info.reset_index().rename(columns={"index": "ID"})
 
 # DataFrame 저장
-test_info.to_csv(f"{config.RESULT_DIR}/{model_name}_output.csv", index=False)
+test_info.to_csv(f"{config.RESULT_DIR}/{model_name}_{config.EPOCHS}_output.csv", index=False)
