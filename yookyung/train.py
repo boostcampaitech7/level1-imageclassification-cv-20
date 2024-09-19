@@ -42,7 +42,7 @@ train_df, val_df = train_test_split(
 
 # 학습에 사용할 Transform을 선언.
 transform_selector = TransformSelector(
-    transform_type = "albumentations"
+    transform_type = 'sketch_albumentations'
 )
 train_transform = transform_selector.get_transform(is_train=True)
 val_transform = transform_selector.get_transform(is_train=False)

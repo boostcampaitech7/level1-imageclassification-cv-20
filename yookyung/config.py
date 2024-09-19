@@ -9,13 +9,13 @@ class Config:
     
     # 모델 관련
     MODEL_TYPE = 'timm' # torchvision, timm
-    MODEL_NAME = 'convnextv2_base'
+    MODEL_NAME = 'convnext_base'
     PRETRAINED = True
     NUM_CLASSES = 500
     
     # 훈련 관련
-    EPOCHS = 10
-    LEARNING_RATE = 0.001
+    EPOCHS = 20
+    LEARNING_RATE = 0.0003
     OPTIMIZER = "adam"
 
     # 손실함수 관련
@@ -24,7 +24,7 @@ class Config:
         "cross_entropy": {},  # CrossEntropyLoss는 기본 파라미터 사용
         "bce_with_logits": {"pos_weight": None},  # BCEWithLogitsLoss 사용 시 설정
         "mse": {},  # MSELoss 사용 시 설정
-        # 필요한 다른 손실 함수들 추가
+        "focal_loss": {"alpha": 0.25, "gamma": 2.0, "reduction": "mean"}
     }
 
     # 스케쥴러 관련
@@ -32,7 +32,7 @@ class Config:
     SCHEDULER_PARAMS = {
         "step": {
             "step_size": 2,  # 학습률 감소시킬 에폭 주기
-            "gamma": 0.9 # 이전학습률 * gamma 로 학습률 정의
+            "gamma": 0.95 # 이전학습률 * gamma 로 학습률 정의
         },
         "cosine": {
             "T_max": 10,  # 전체 주기 
@@ -50,7 +50,6 @@ class Config:
     
     # 평가 관련
     EVAL_METRIC = "accuracy"
-    VALID_INTERVAL = 1
     
     # 추론 관련
     INFERENCE_MODEL_PATH = "./yookyung/train_result/best_model.pth"
