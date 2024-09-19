@@ -435,7 +435,7 @@ class BaseTrainer:
 
         # 가장 높은 acc의 모델 저장
         if acc > self.highest_val_acc:
-            self.highest_val_acc = acc
+            # self.highest_val_acc = acc
             best_model_path = os.path.join(self.result_path+"/"+self.model_name,f'{self.model_name}_Acc_{acc:.4f}_best_model.pt')
             if os.path.exists(self.pre_best):
                 os.remove(self.pre_best)
@@ -484,7 +484,6 @@ class BaseTrainer:
 
             # 모델 저장
             self.save_model(epoch=epoch+1, acc=val_acc, loss=val_loss)
-
             # Early Stopping
             if val_acc > self.highest_val_acc :
                 self.highest_val_acc = val_acc
@@ -496,10 +495,10 @@ class BaseTrainer:
                     print(f"Early stopping at epoch {epoch+1}.")
                     break
 
-            # self.scheduler.step()
+            self.scheduler.step()
 
             # 매 에폭마다 그래프 시각화
-            self.plot_results()
+            #self.plot_results()
 
         wandb.finish()
         # 최종 그래프 시각화 (전체 학습이 끝난 후에도 그래프를 그릴 수 있음)
