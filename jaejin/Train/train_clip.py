@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -13,6 +14,9 @@ from functions import *
 
 import os
 
+model_rl = float(sys.argv[1])
+is_textFrozen = sys.argv[2] == 'True'
+is_multi_prompt = sys.argv[3] == 'True'
 
 # 학습 데이터의 경로와 정보를 가진 파일의 경로를 설정
 dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
@@ -30,21 +34,19 @@ train_data = pd.read_csv(traindata_info_file)
 test_data = pd.read_csv(testdata_info_file)
 
 # 학습 데이터의 정보를 출력
-train_info = train_data.info()
-train_head = train_data.head()
-
-train_info, train_head
-
+# train_info = train_data.info()
+# train_head = train_data.head()
+# train_info, train_head
 # 데이터의 기본적인 통계 정보를 출력
-data_description = train_data.describe(include='all')
+# data_description = train_data.describe(include='all')
 
-# class_name의 unique한 값의 개수를 출력
-unique_classes = train_data['class_name'].nunique()
+# # class_name의 unique한 값의 개수를 출력
+# unique_classes = train_data['class_name'].nunique()
 
-# target의 unique한 값의 개수를 출력
-unique_targets = train_data['target'].nunique()
+# # target의 unique한 값의 개수를 출력
+# unique_targets = train_data['target'].nunique()
 
-data_description, unique_classes, unique_targets
+# data_description, unique_classes, unique_targets
 
 from transformers import CLIPProcessor, CLIPModel,AdamW
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -90,22 +92,22 @@ val_dataset = CLIPDataset(
 
 train_loader = DataLoader(
     train_dataset, 
-    batch_size=64, 
+    batch_size=128, 
     shuffle=True
 )
 val_loader = DataLoader(
     val_dataset, 
-    batch_size=64, 
+    batch_size=128, 
     shuffle=False
 )
 
 # 스케줄러 초기화
-scheduler_step_size = 30 # 매 30step마다 학습률 감소
-scheduler_gamma = 0.99  # 학습률을 현재의 10%로 감소
+scheduler_step_size = 2 # 매 30step마다 학습률 감소
+scheduler_gamma = 0.9  # 학습률을 현재의 90%로 감소
 
 # 한 epoch당 step 수 계산
 steps_per_epoch = len(train_loader)
-lr = 3e-6
+lr = model_rl
 optimizer = optim.Adam(model.parameters(), lr= lr)
 
 # 2 epoch마다 학습률을 감소시키는 스케줄러 선언
@@ -119,7 +121,6 @@ scheduler = optim.lr_scheduler.StepLR(
 )
 
 loss_fn = Loss()
-
 save_result_path = dir+"/train_result"
 mini_values=get_imagenet_ditction(mini=True,values=True)
 trainer = CLIP_Trainer(
@@ -134,8 +135,13 @@ trainer = CLIP_Trainer(
     epochs=100,
     result_path=save_result_path,
     mini_values=mini_values,
+    textFrozen=is_textFrozen,
+    multi_prompt=is_multi_prompt,
+    model_name="clip_"+str(lr)+f"_multiprompt_{is_multi_prompt}_textFrozen_{is_textFrozen}",
     lr=lr
 )
+
+
 
 # 모델 학습.
 trainer.train()
