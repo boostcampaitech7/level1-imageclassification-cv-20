@@ -626,7 +626,10 @@ class CLIP_Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             im = self.processor(images=images, return_tensors="pt", padding=True).to(self.device)
-            txf = self.process_text_batches(self.generate_prompts(targets))
+            if self.multi_prompt:                
+                txf = self.process_text_batches(self.generate_prompts(targets))
+            else:
+                txf = self.process_text_batches(targets)
             imf = self.model.get_image_features(**im)
             imf = imf / imf.norm(dim=1, keepdim=True)
             logit_scale = self.model.logit_scale.exp()
