@@ -18,7 +18,7 @@ class Config:
     NUM_CLASSES = 500
     
     # 훈련 관련
-    EPOCHS = 20
+    EPOCHS = 50
     LEARNING_RATE = 0.0003
     OPTIMIZER = "adam"
 
