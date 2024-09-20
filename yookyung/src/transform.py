@@ -83,7 +83,7 @@ class SketchImageAugmentation:
                 [# Geometric transformations
                     A.Rotate(limit=10, p=0.5),
                     A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
-                    A.ElasticTransform(alpha=1, sigma=10, alpha_affine=10, p=0.5),
+                    A.ElasticTransform(alpha=0.5, sigma=5, alpha_affine=5, p=0.5),
 
                     ## Morphological transformations
                     #A.Erosion(kernel=(1, 2), p=0.5),

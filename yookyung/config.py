@@ -7,6 +7,10 @@ class Config:
     BATCH_SIZE = 64
     IMAGE_SIZE = (224, 224)
     
+    # K-fold 관련
+    K_FOLDS = 5
+    K_FOLD_USE = True
+    
     # 모델 관련
     MODEL_TYPE = 'timm' # torchvision, timm
     MODEL_NAME = 'convnext_base'
@@ -14,7 +18,7 @@ class Config:
     NUM_CLASSES = 500
     
     # 훈련 관련
-    EPOCHS = 20
+    EPOCHS = 50
     LEARNING_RATE = 0.0003
     OPTIMIZER = "adam"
 
@@ -32,7 +36,7 @@ class Config:
     SCHEDULER_PARAMS = {
         "step": {
             "step_size": 2,  # 학습률 감소시킬 에폭 주기
-            "gamma": 0.95 # 이전학습률 * gamma 로 학습률 정의
+            "gamma": 0.5 # 이전학습률 * gamma 로 학습률 정의
         },
         "cosine": {
             "T_max": 10,  # 전체 주기 
@@ -46,7 +50,7 @@ class Config:
     
     # 로깅 및 체크포인트
     CHECKPOINT_DIR = f"./yookyung/train_result/{MODEL_NAME}"
-    SAVE_TOP_K = 3  # 저장할 최상위 모델 수
+    # SAVE_TOP_K = 3  # 저장할 최상위 모델 수
     
     # 평가 관련
     EVAL_METRIC = "accuracy"

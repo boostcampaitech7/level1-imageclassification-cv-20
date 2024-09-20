@@ -6,11 +6,9 @@ import torch
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from src.transform import *
-from src.dataset import *
-from src.trainer import *
-from models.models import *
-from models.loss import *
+from src.transform import TransformSelector
+from src.dataset import CustomDataset
+from src.trainer import DataLoader, get_trainer
 
 from config import config
 
@@ -71,13 +69,13 @@ val_loader = DataLoader(
     shuffle=False
 )
 
-# 학습에 사용할 Model을 선언.
-model_selector = ModelSelector(
-    model_type=config.MODEL_TYPE, 
-    num_classes=config.NUM_CLASSES,
-    model_name=config.MODEL_NAME, 
-    pretrained=config.PRETRAINED
-)
+# # 학습에 사용할 Model을 선언.
+# model_selector = ModelSelector(
+#     model_type=config.MODEL_TYPE, 
+#     num_classes=config.NUM_CLASSES,
+#     model_name=config.MODEL_NAME, 
+#     pretrained=config.PRETRAINED
+# )
 
 # model = model_selector.get_model()
 # model.to(device)
