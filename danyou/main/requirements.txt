@@ -1,0 +1,10 @@
+pandas==2.1.4
+matplotlib==3.8.4
+seaborn==0.13.2
+Pillow==10.3.0
+numpy==1.26.3
+timm==0.9.16
+albumentations==1.4.4
+tqdm==4.66.1
+scikit-learn==1.4.2
+opencv-python==4.9.0.80
