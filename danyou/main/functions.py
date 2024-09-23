@@ -216,7 +216,7 @@ class AlbumentationsTransform:
             )
         else:
             # 검증/테스트용 변환: 공통 변환만 적용
-            self.transform = A.Compose(common_transforms)
+            self.transform = A.Compose(common_transforms) 
 
     def __call__(self, image) -> torch.Tensor:
         # 이미지가 NumPy 배열인지 확인
