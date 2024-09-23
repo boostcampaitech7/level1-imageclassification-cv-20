@@ -36,6 +36,8 @@ def get_loss_function():
         return nn.BCEWithLogitsLoss(**config.LOSS_PARAMS["bce_with_logits"])
     elif config.LOSS == "mse":
         return nn.MSELoss(**config.LOSS_PARAMS["mse"])
+    elif config.LOSS == 'kldivloss':
+        return nn.KLDivLoss()
     # 필요한 다른 손실 함수들 추가
     else:
         raise ValueError(f"Unsupported loss function: {config.LOSS}")

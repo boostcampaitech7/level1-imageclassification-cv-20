@@ -23,12 +23,13 @@ class Config:
     OPTIMIZER = "adam"
 
     # 손실함수 관련
-    LOSS = "cross_entropy" # cross_entropy, bce_with_logits, mse
+    LOSS = "cross_entropy" # cross_entropy, bce_with_logits, mse, kldivloss
     LOSS_PARAMS = {
         "cross_entropy": {},  # CrossEntropyLoss는 기본 파라미터 사용
         "bce_with_logits": {"pos_weight": None},  # BCEWithLogitsLoss 사용 시 설정
         "mse": {},  # MSELoss 사용 시 설정
-        "focal_loss": {"alpha": 0.25, "gamma": 2.0, "reduction": "mean"}
+        "focal_loss": {"alpha": 0.25, "gamma": 2.0, "reduction": "mean"},
+        'kldivloss' : {'reduction':'batchmean'}
     }
 
     # 스케쥴러 관련
