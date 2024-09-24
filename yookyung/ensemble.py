@@ -160,8 +160,8 @@ device = config.DEVICE if torch.cuda.is_available() else 'cpu'
 
 # 앙상블할 모델 목록 정의
 model_configs = [
-    {"model_type": 'timm', "model_name": "convnext_base", "weights_path": "../train_result/convnext_base/best_model.pt"},
-    {"model_type": 'timm', "model_name": "convnext_base", "weights_path": "../train_result/convnext_base_30epoch_0.8860/best_model.pt"},
+    {"model_type": 'timm', "model_name": "convnext_base", "weights_path": "./yookyung/train_result/convnext_base_cutmix_5epoch_0.8370/best_model.pt"},
+    {"model_type": 'timm', "model_name": "convnext_base", "weights_path": "./yookyung/train_result/convnext_base_30epoch_0.8860/best_model.pt"},
 ]
 
 # 모델 로드 및 앙상블 수행

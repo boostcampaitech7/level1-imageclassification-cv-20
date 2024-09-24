@@ -57,7 +57,7 @@ num_classes = config.NUM_CLASSES
 
 # 추론에 사용할 Transform을 선언.
 transform_selector = TransformSelector(
-    transform_type = "albumentations"
+    transform_type = "sketch_albumentations"
 )
 test_transform = transform_selector.get_transform(is_train=False)
 
