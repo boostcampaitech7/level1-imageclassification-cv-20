@@ -20,6 +20,7 @@ from transformers import CLIPProcessor
 from PIL import Image
 import matplotlib.pyplot as plt
 import wandb
+from transformers import ViTFeatureExtractor, ViTModel
 
 dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
 prompt_path = dir+"/data/zeroshot_classification_templates.txt"
@@ -73,15 +74,16 @@ class CLIPDataset(Dataset):
         image = cv2.imread(img_path, cv2.IMREAD_COLOR)  # 이미지를 BGR 컬러 포맷의 numpy array로 읽어옵니다.
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR 포맷을 RGB 포맷으로 변환합니다.
         image = self.transform(image)  # 설정된 이미지 변환을 적용합니다.
-        # image = Image.open(os.path.join(self.root_dir, self.image_paths[index]) )
-        classes = self.image_paths[index].split("/")[0]
-        text = mini_imagenet_cls_map[classes]
-    
+        # image = Image.open(os.path.join(self.root_dir, self.image_paths[index]))
+        if not self.is_inference:
+            classes = self.image_paths[index].split("/")[0]
+            text = mini_imagenet_cls_map[classes]
+            if self.use_print:
+                print(str(text))
         
-        if self.use_print:
-            print(str(text))
+        
         if self.is_inference:
-            return self.processor(images=image, return_tensors="pt", padding=True).to(self.device)
+            return image#self.processor(images=image, return_tensors="pt", padding=True).to(self.device)
         else:            
             return image,text#self.processor(text=text, images=image, return_tensors="pt", padding=True).to(self.device)
         
@@ -109,7 +111,7 @@ class CustomDataset(Dataset):
     def __getitem__(self, index: int) -> Union[Tuple[torch.Tensor, int], torch.Tensor]:
         # 주어진 인덱스에 해당하는 이미지를 로드하고 변환을 적용한 후, 이미지와 레이블을 반환합니다.
         img_path = os.path.join(self.root_dir, self.image_paths[index])  # 이미지 경로 조합
-        image = cv2.imread(img_path, cv2.IMREAD_COLOR)  # 이미지를 BGR 컬러 포맷의 numpy array로 읽어옵니다.
+        image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  # 이미지를 BGR 컬러 포맷의 numpy array로 읽어옵니다.
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR 포맷을 RGB 포맷으로 변환합니다.
         image = self.transform(image=image)['image']   # 설정된 이미지 변환을 적용합니다.
 
@@ -701,7 +703,33 @@ class CLIP_Trainer(BaseTrainer):
         accuracy = corrects / total
         return avg_loss, accuracy
     
+    def inference(self):
+        # 모델을 평가 모드로 설정
+        self.model.to(self.device)
+        self.model.eval()
+        progress_bar = tqdm(self.val_loader, desc="eval", leave=False)
+        predictions = []
+        all_image_features = []
+        all_labels = []
+        with torch.no_grad():  # Gradient 계산을 비활성화
+
+            for images in progress_bar:
+                inputs = self.processor(images=images, return_tensors="pt", padding=True).to(self.device)
+                imf = self.model.get_image_features(**inputs)
+                imf = imf / imf.norm(dim=1, keepdim=True)# F.normalize(image_features, p=2, dim=1)
+                all_image_features.append(imf)                
+                all_labels.append(torch.tensor([self.mini_values.index(ind) for ind in self.mini_values],device=self.device))
+
+                logit_scale = self.model.logit_scale.exp()
+                logits_per_image = logit_scale * imf @ self.all_text_features.t()
+                probs = logits_per_image.softmax(dim=-1)                 
+                if self.multi_prompt:
+                    probs = probs.view(logits_per_image.size(0), 500, -1).mean(dim=2)               
+                p= torch.argmax(probs,dim=1)
+                predictions.extend(p.cpu().detach().numpy())  # 결과를 CPU로 옮기고 리스트에 추가
+
  
+        return predictions
     
 class Trainer(BaseTrainer):
     def __init__(
@@ -742,6 +770,7 @@ class Trainer(BaseTrainer):
         total = 0
 
         progress_bar = tqdm(self.train_loader, desc="Training", leave=False)
+ 
         for images, targets in progress_bar:
             images, targets = images.to(self.device), targets.to(self.device)
             self.optimizer.zero_grad()
@@ -785,9 +814,45 @@ class Trainer(BaseTrainer):
         accuracy = corrects / total
         return avg_loss, accuracy
     
-  
+class DINOViTClassifier(nn.Module):
+    def __init__(self, num_classes, classifier_type='1'):
+        super().__init__()
+        self.vit = ViTModel.from_pretrained('facebook/dino-vitb8')
+        self.classifier_type = classifier_type
+        print("Dino ver is "+self.classifier_type)
+        self.linear_classifier = nn.Linear(self.vit.config.hidden_size, num_classes)
+        # MLP classifier
+        self.mlp_classifier = nn.Sequential(
+            nn.Linear(self.vit.config.hidden_size, 512),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(512, num_classes)
+        )
+        # Attention classifier
+        self.attention_classifier = nn.MultiheadAttention(self.vit.config.hidden_size, num_heads=8)
+        self.attention_fc = nn.Linear(self.vit.config.hidden_size, num_classes)
+        for param in self.vit.parameters():
+            param.requires_grad = False
 
-def get_model_and_transforms(model_name):
+    def forward(self, pixel_values):
+        outputs = self.vit(pixel_values=pixel_values)
+        cls_token_output = outputs.last_hidden_state[:, 0]  # CLS token output
+
+        if self.classifier_type == '1':
+            logits = self.linear_classifier(cls_token_output)
+        elif self.classifier_type == '2':
+            logits = self.mlp_classifier(cls_token_output)
+        elif self.classifier_type == '3':
+            # Reshape for attention layer
+            cls_token_output = cls_token_output.unsqueeze(0)
+            attn_output, _ = self.attention_classifier(cls_token_output, cls_token_output, cls_token_output)
+            logits = self.attention_fc(attn_output.squeeze(0))
+        else:
+            raise ValueError("Invalid classifier type. Choose 'linear', 'mlp', or 'attention'.")
+
+        return logits
+
+def get_model_and_transforms(model_name,ver="1"):
    
     if model_name == "resnet18":
         weights = models.ResNet18_Weights.DEFAULT
@@ -848,6 +913,10 @@ def get_model_and_transforms(model_name):
         weights = models.ConvNeXt_Tiny_Weights.DEFAULT
         model = models.convnext_tiny(weights=weights)
         preprocess = weights.transforms()
+
+    elif model_name == "dino-vitb8":
+        model = DINOViTClassifier(500,ver)
+        preprocess = ViTFeatureExtractor.from_pretrained('facebook/dino-vitb8')
     else:
         raise ValueError(f"Unsupported model: {model_name}")
     

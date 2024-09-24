@@ -102,7 +102,7 @@ val_loader = DataLoader(
 )
 
 # 스케줄러 초기화
-scheduler_step_size = 2 # 매 30step마다 학습률 감소
+scheduler_step_size = 5 # 매 30step마다 학습률 감소
 scheduler_gamma = 0.9  # 학습률을 현재의 90%로 감소
 
 # 한 epoch당 step 수 계산

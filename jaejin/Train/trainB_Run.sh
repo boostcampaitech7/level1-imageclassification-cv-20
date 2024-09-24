@@ -26,14 +26,27 @@ variable1="convnext_large"
 python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
 variable1="convnext_tiny"
 python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
+
+variable1="dino-vitb8"
+python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
 END
-
+variable4="1"
 variable3="False"
-variable2="3e-4"
-variable1="convnext_base"
-python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
+variable2="8e-4"
+variable1="dino-vitb8"
+python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4"
 
-variable3="True"
-variable2="1e-4"
-variable1="convnext_base"
-python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
+variable4="2"
+variable3="False"
+variable2="8e-4"
+variable1="dino-vitb8"
+python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4"
+
+variable4="3"
+variable3="False"
+variable2="8e-4"
+variable1="dino-vitb8"
+python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4"
+
+
+
