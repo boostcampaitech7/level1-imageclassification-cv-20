@@ -40,7 +40,6 @@ train_df, val_df = train_test_split(
     random_state=20
 )
 
-
 # 새롭게 생성한 canny edge data를 train_df에 해당되는 것만 이동
 source_dir = '/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/suyoung/data/canny'  # 원본 디렉토리 경로
 destination_dir = '/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/suyoung/data/train'  # 대상 디렉토리 경로
