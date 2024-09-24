@@ -1,6 +1,6 @@
 '''
 cutmix.py version 2
-1) cutmix 증강을 배치 단위로 동작하도록 수정
+1) cutmix 증강을 배치 단위로 동작하도록 수정 - 따로 함수 만들지 않고 v2.CutMix 사용
 2) 훈련 과정에서 기존 dataset과 cutmix 증강 dataset 을 모두 학습
 
 '''
@@ -85,6 +85,7 @@ class Trainer:
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
         self.high_acc = 0.0
+        self.cutmix = v2.CutMix(num_classes=500)
 
     def save_model(self, epoch, loss, acc):
         # 모델 저장 경로 설정
@@ -121,12 +122,12 @@ class Trainer:
             images, targets = images.to(self.device), targets.to(self.device)
 
             # 원본 데이터로 학습
-            outputs = torch.log_softmax(self.model(images), dim=1)
-            loss_original = self.loss_fn(outputs, targets)
+            outputs_original = self.model(images)
+            loss_original = self.loss_fn(outputs_original, targets)
 
             # CutMix 적용
-            images_mixed, targets_mixed = cutmix_batch(images, targets)
-            outputs_mixed = torch.log_softmax(self.model(images_mixed), dim=1)
+            images_mixed, targets_mixed = self.cutmix(images, targets)
+            outputs_mixed = self.model(images_mixed)
             loss_mixed = self.loss_fn(outputs_mixed, targets_mixed)
 
             # 두 손실을 합침
@@ -139,18 +140,16 @@ class Trainer:
             total_loss += loss.item()
 
             # 원본 데이터에 대한 정확도 계산
-            _, predicted = torch.max(outputs.data, 1)
-            _, target_labels = torch.max(targets, 1)
+            _, predicted = torch.max(outputs_original.data, 1)
 
             total += targets.size(0)
-            correct += (predicted == target_labels).sum().item()
+            correct += (predicted == targets).sum().item()
 
             progress_bar.set_postfix(loss=loss.item(), acc=correct/total)
         
         return total_loss / len(self.train_loader), correct / total
 
     def validate(self) -> float:
-        # 모델의 검증을 진행
         self.model.eval()
         
         total_loss = 0.0
@@ -162,18 +161,18 @@ class Trainer:
             for images, targets in progress_bar:
                 images, targets = images.to(self.device), targets.to(self.device)
                 
-                outputs = torch.log_softmax(self.model(images), dim=1) 
-                loss = self.loss_fn(outputs, targets)
+                log_probs = F.log_softmax(self.model(images), dim=1)
+                loss = self.loss_fn(log_probs, targets)
 
                 total_loss += loss.item()
-                _, predicted = torch.max(outputs.data,1)
+                _, predicted = torch.max(log_probs.data, 1)
                 _, target_labels = torch.max(targets, 1)
                 total += targets.size(0)
                 correct += (predicted == target_labels).sum().item()
 
                 progress_bar.set_postfix(loss=loss.item(), acc=correct/total)
         
-        return total_loss / len(self.train_loader), correct / total
+        return total_loss / len(self.val_loader), correct / total
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
