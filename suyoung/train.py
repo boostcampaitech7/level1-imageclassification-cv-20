@@ -40,54 +40,54 @@ train_df, val_df = train_test_split(
     random_state=20
 )
 
-# 새롭게 생성한 canny edge data를 train_df에 해당되는 것만 이동
-source_dir = '/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/suyoung/data/canny'  # 원본 디렉토리 경로
-destination_dir = '/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/suyoung/data/train'  # 대상 디렉토리 경로
+# # 새롭게 생성한 canny edge data를 train_df에 해당되는 것만 이동
+# source_dir = '/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/suyoung/data/canny'  # 원본 디렉토리 경로
+# destination_dir = '/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/suyoung/data/train'  # 대상 디렉토리 경로
 
-source_folders = os.listdir(source_dir)
-destination_folders = os.listdir(destination_dir)
+# source_folders = os.listdir(source_dir)
+# destination_folders = os.listdir(destination_dir)
 
-for i in range(len(destination_folders)):
-    if destination_folders[i] in source_folders:
-        folder = destination_folders[i]
-        image_path_list = train_df[train_df['class_name'] == folder]['image_path'].to_list()
-        for j in range(len(image_path_list)):
-            source_file_path = os.path.join(source_dir, image_path_list[j])
-            file_name = image_path_list[j].split('/')[-1]
-            new_name = 'edge_detected_' + file_name
-            destination_file_path = os.path.join(destination_dir, folder, new_name)
-            shutil.copy2(source_file_path, destination_file_path)
+# for i in range(len(destination_folders)):
+#     if destination_folders[i] in source_folders:
+#         folder = destination_folders[i]
+#         image_path_list = train_df[train_df['class_name'] == folder]['image_path'].to_list()
+#         for j in range(len(image_path_list)):
+#             source_file_path = os.path.join(source_dir, image_path_list[j])
+#             file_name = image_path_list[j].split('/')[-1]
+#             new_name = 'edge_detected_' + file_name
+#             destination_file_path = os.path.join(destination_dir, folder, new_name)
+#             shutil.copy2(source_file_path, destination_file_path)
 
-# train_info에 추가된 canny edge data를 덧붙임
-class_name_list = []
-image_path_list = []
-target_list = []
+# # train_info에 추가된 canny edge data를 덧붙임
+# class_name_list = []
+# image_path_list = []
+# target_list = []
 
-traindata_folders = os.listdir(traindata_dir)
+# traindata_folders = os.listdir(traindata_dir)
 
-for i in range(len(traindata_folders)):
-    if traindata_folders[i] != '.DS_Store':
-        class_name = traindata_folders[i]
-        class_path = os.path.join(traindata_dir, class_name)
-        class_target = train_info[train_info['class_name'] == class_name]['target'].unique().item()
+# for i in range(len(traindata_folders)):
+#     if traindata_folders[i] != '.DS_Store':
+#         class_name = traindata_folders[i]
+#         class_path = os.path.join(traindata_dir, class_name)
+#         class_target = train_info[train_info['class_name'] == class_name]['target'].unique().item()
 
-        # 클래스 폴더에서 이미지별로 path 추출
-        class_images_list = os.listdir(class_path)
-        for j in range(len(class_images_list)):
-            class_image = class_images_list[j]
-            if class_image.startswith('edge_detected'):
-                class_image_path = os.path.join(class_name, class_image)
-                class_name_list.append(class_name)
-                image_path_list.append(class_image_path)
-                target_list.append(class_target)
+#         # 클래스 폴더에서 이미지별로 path 추출
+#         class_images_list = os.listdir(class_path)
+#         for j in range(len(class_images_list)):
+#             class_image = class_images_list[j]
+#             if class_image.startswith('edge_detected'):
+#                 class_image_path = os.path.join(class_name, class_image)
+#                 class_name_list.append(class_name)
+#                 image_path_list.append(class_image_path)
+#                 target_list.append(class_target)
 
-# 데이터 프레임에 추가하기 
-new_data = pd.DataFrame({train_info.columns[0] : class_name_list, 
-                         train_info.columns[1] : image_path_list,
-                         train_info.columns[2] : target_list})
+# # 데이터 프레임에 추가하기 
+# new_data = pd.DataFrame({train_info.columns[0] : class_name_list, 
+#                          train_info.columns[1] : image_path_list,
+#                          train_info.columns[2] : target_list})
 
-train_info = pd.concat([train_info, new_data], ignore_index=True)
-train_info = train_info.astype({'target' : 'int'})
+# train_info = pd.concat([train_info, new_data], ignore_index=True)
+# train_info = train_info.astype({'target' : 'int'})
 
 
 # 학습에 사용할 Transform을 선언.

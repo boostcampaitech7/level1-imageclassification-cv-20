@@ -3,8 +3,8 @@ class Config:
     TRAIN_DATA_DIR = "./data/train"
     TEST_DATA_DIR = './data/test'
 
-    TRAIN_RATIO = 0.8
-    BATCH_SIZE = 64
+    TRAIN_RATIO = 0.96
+    BATCH_SIZE = 32
     IMAGE_SIZE = (224, 224)
     
     # K-fold 관련
@@ -19,7 +19,7 @@ class Config:
     
     # 훈련 관련
     EPOCHS = 30
-    LEARNING_RATE = 0.00015
+    LEARNING_RATE = 0.0003
     OPTIMIZER = "adam"
 
     # 손실함수 관련
