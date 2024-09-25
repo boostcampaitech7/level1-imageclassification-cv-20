@@ -1,6 +1,6 @@
 '''
 cutmix.py version 2
-1) cutmix 증강을 배치 단위로 동작하도록 수정 - 따로 함수 만들지 않고 v2.CutMix 사용
+1) cutmix 증강을 배치 단위로 동작하도록 수정
 2) 훈련 과정에서 기존 dataset과 cutmix 증강 dataset 을 모두 학습
 
 '''
@@ -38,18 +38,17 @@ def cutmix_batch(images, labels, alpha=1.0):
     batch_size = images.size(0)
     lam = np.random.beta(alpha, alpha)
     
-    # 랜덤으로 다른 이미지와 레이블 선택
     rand_index = torch.randperm(batch_size)
     
-    # 이미지를 결합
     bbx1, bby1, bbx2, bby2 = rand_bbox(images.size(), lam)
-    images[:, :, bbx1:bbx2, bby1:bby2] = images[rand_index, :, bbx1:bbx2, bby1:bby2]
     
-    # 소프트 레이블 생성
+    new_images = images.clone()
+    new_images[:, :, bbx1:bbx2, bby1:bby2] = images[rand_index, :, bbx1:bbx2, bby1:bby2]
+    
     lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (images.size()[-1] * images.size()[-2]))
-    soft_labels = lam * labels + (1 - lam) * labels[rand_index]
+    new_labels = lam * labels + (1 - lam) * labels[rand_index]
     
-    return images, soft_labels
+    return new_images, new_labels
 
 def rand_bbox(size, lam):
     W = size[2]
@@ -85,7 +84,6 @@ class Trainer:
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
         self.high_acc = 0.0
-        self.cutmix = v2.CutMix(num_classes=500)
 
     def save_model(self, epoch, loss, acc):
         # 모델 저장 경로 설정
@@ -121,12 +119,14 @@ class Trainer:
         for images, targets in progress_bar:
             images, targets = images.to(self.device), targets.to(self.device)
 
+            targets_one_hot = F.one_hot(targets, num_classes=config.NUM_CLASSES).float()
+
             # 원본 데이터로 학습
-            outputs_original = self.model(images)
-            loss_original = self.loss_fn(outputs_original, targets)
+            outputs = self.model(images)
+            loss_original = self.loss_fn(outputs, targets_one_hot)
 
             # CutMix 적용
-            images_mixed, targets_mixed = self.cutmix(images, targets)
+            images_mixed, targets_mixed = cutmix_batch(images, targets_one_hot)
             outputs_mixed = self.model(images_mixed)
             loss_mixed = self.loss_fn(outputs_mixed, targets_mixed)
 
@@ -140,8 +140,7 @@ class Trainer:
             total_loss += loss.item()
 
             # 원본 데이터에 대한 정확도 계산
-            _, predicted = torch.max(outputs_original.data, 1)
-
+            _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += (predicted == targets).sum().item()
 
@@ -161,21 +160,21 @@ class Trainer:
             for images, targets in progress_bar:
                 images, targets = images.to(self.device), targets.to(self.device)
                 
-                log_probs = F.log_softmax(self.model(images), dim=1)
-                loss = self.loss_fn(log_probs, targets)
+                outputs = self.model(images)
+                targets_one_hot = F.one_hot(targets, num_classes=config.NUM_CLASSES).float()
+                loss = self.loss_fn(outputs, targets_one_hot)
 
                 total_loss += loss.item()
-                _, predicted = torch.max(log_probs.data, 1)
-                _, target_labels = torch.max(targets, 1)
+                _, predicted = torch.max(outputs.data, 1)
                 total += targets.size(0)
-                correct += (predicted == target_labels).sum().item()
+                correct += (predicted == targets).sum().item()
 
                 progress_bar.set_postfix(loss=loss.item(), acc=correct/total)
         
         return total_loss / len(self.val_loader), correct / total
 
+
     def train(self) -> None:
-        # 전체 훈련 과정을 관리
         for epoch in range(self.epochs):
             print(f"Epoch {epoch+1}/{self.epochs}")
             
@@ -238,23 +237,19 @@ def inference(
     device: torch.device, 
     test_loader: DataLoader
 ):
-    # 모델을 평가 모드로 설정
     model.to(device)
     model.eval()
     
     predictions = []
-    with torch.no_grad():  # Gradient 계산을 비활성화
+    with torch.no_grad():
         for images in tqdm(test_loader):
-            # 데이터를 같은 장치로 이동
             images = images.to(device)
             
-            # 모델을 통해 예측 수행
             logits = model(images)
             logits = F.softmax(logits, dim=1)
             preds = logits.argmax(dim=1)
             
-            # 예측 결과 저장
-            predictions.extend(preds.cpu().detach().numpy())  # 결과를 CPU로 옮기고 리스트에 추가
+            predictions.extend(preds.cpu().detach().numpy())
     
     return predictions
 
@@ -311,12 +306,7 @@ model_selector = ModelSelector(
 model = model_selector.get_model()
 
 # best epoch 모델을 불러오기.
-model.load_state_dict(
-    torch.load(
-        os.path.join(save_result_path, "best_model.pt"),
-        map_location='cpu'
-    )
-)
+model.load_state_dict(torch.load(os.path.join(save_result_path, "best_model.pt"), map_location=device))
 
 # predictions를 CSV에 저장할 때 형식을 맞춰서 저장
 # 테스트 함수 호출

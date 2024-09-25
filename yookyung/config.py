@@ -23,7 +23,7 @@ class Config:
     OPTIMIZER = "adam"
 
     # 손실함수 관련
-    LOSS = "kldivloss" # cross_entropy, bce_with_logits, mse, kldivloss
+    LOSS = "cross_entropy" # cross_entropy, bce_with_logits, mse, kldivloss
     LOSS_PARAMS = {
         "cross_entropy": {},  # CrossEntropyLoss는 기본 파라미터 사용
         "bce_with_logits": {"pos_weight": None},  # BCEWithLogitsLoss 사용 시 설정
