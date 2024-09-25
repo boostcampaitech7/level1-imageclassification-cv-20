@@ -44,7 +44,7 @@ model_name = config.MODEL_NAME
 testdata_dir = config.TEST_DATA_DIR
 testdata_info_file = os.path.join(testdata_dir, '../test.csv')
 testdata_info_file = os.path.abspath(testdata_info_file)
-save_result_path = config.CHECKPOINT_DIR
+save_result_path = config.CHECKPOINT_DIR + '(lr0.00015)'
 
 if not os.path.exists(save_result_path):
     os.makedirs(save_result_path)
