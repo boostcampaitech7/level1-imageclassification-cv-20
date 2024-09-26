@@ -1,6 +1,6 @@
 import sys
 from torchvision import models
-
+from transformers import ViTModel
 name = sys.argv[1]
 version = sys.argv[2]
 
@@ -43,6 +43,9 @@ elif name == "convnext_large":
 
 elif name == "convnext_tiny":
     M = models.convnext_tiny(weights=models.ConvNeXt_Tiny_Weights.DEFAULT)
+    
+elif name == "dino-vitb8":
+    M = ViTModel.from_pretrained('facebook/dino-vitb8')
 else:
     print("wrong version!!!")
     sys.exit(0)

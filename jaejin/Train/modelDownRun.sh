@@ -1,5 +1,3 @@
-
- 
 variable1="Resnet"
 variable2="18"
 python baseline_model_down.py "$variable1" "$variable2"
@@ -29,4 +27,7 @@ python baseline_model_down.py "$variable1" "$variable2"
 variable1="convnext_large"
 python baseline_model_down.py "$variable1" "$variable2"
 variable1="convnext_tiny"
+python baseline_model_down.py "$variable1" "$variable2"
+
+variable1="dino-vitb8"
 python baseline_model_down.py "$variable1" "$variable2"

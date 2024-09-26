@@ -12,7 +12,7 @@ import pandas as pd
 from functions import CustomDataset, Trainer, get_model_and_transforms
 from sklearn.model_selection import train_test_split
 
-def main(model_name,model_rl,is_ag):
+def main(model_name,model_rl,is_ag,ver):
     dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
     traindata_dir = dir+"/data/train"
     traindata_info_file = dir+"/data/train.csv"
@@ -25,12 +25,23 @@ def main(model_name,model_rl,is_ag):
         random_state=20,
         stratify=train_info['target']
         )
-    
+
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\nTraining and evaluating {model_name}")
-    model, preprocess = get_model_and_transforms(model_name)
-    model = model.to(device)
+    if int(ver) <4:
+        model, preprocess = get_model_and_transforms(model_name,ver)
+        model = model.to(device)
+    else:
+        print("기존꺼 이어서 학습")
+        model, preprocess = get_model_and_transforms(model_name,ver)
+        model.load_state_dict(
+            torch.load(
+                os.path.join(save_result_path+"/convnext_base_0.001_aug_True4", "convnext_base_0.001_aug_True4_Acc_0.8562_best_model.pt"),
+                map_location='cpu'
+            )
+        )
+        model = model.to(device)
 
     if is_ag:
         data_transforms = A.Compose([
@@ -79,22 +90,22 @@ def main(model_name,model_rl,is_ag):
 
     train_loader = DataLoader(
         train_dataset, 
-        batch_size=128, 
+        batch_size=64, 
         shuffle=True
     )
     val_loader = DataLoader(
         val_dataset, 
-        batch_size=128, 
+        batch_size=64, 
         shuffle=False
     )    
 
     # 스케줄러 초기화
-    scheduler_step_size = 30 # 매 30step마다 학습률 감소
-    scheduler_gamma = 1  
+    scheduler_step_size = 2 # 매 30step마다 학습률 감소
+    scheduler_gamma = 1
 
     # 한 epoch당 step 수 계산
     steps_per_epoch = len(train_loader)
-    optimizer = optim.Adam(model.parameters(), lr= model_rl)
+    optimizer = optim.SGD(model.parameters(), lr= model_rl, momentum=0.9)
     loss_fn = nn.CrossEntropyLoss()
     # 2 epoch마다 학습률을 감소시키는 스케줄러 선언
     epochs_per_lr_decay = 5
@@ -106,7 +117,12 @@ def main(model_name,model_rl,is_ag):
         gamma=scheduler_gamma
     )    
 
-
+    if ver=="4":
+        ver="basic"
+    elif ver=="5":
+        ver="balance"
+    elif ver=="6":
+        ver="balance_no_cut"
     trainer = Trainer(model,
             device,
             train_loader, 
@@ -114,18 +130,19 @@ def main(model_name,model_rl,is_ag):
             optimizer, 
             scheduler, 
             loss_fn,  
-            epochs=50, 
+            epochs=30, 
             result_path=save_result_path,
-            model_name=model_name+'_'+str(model_rl)+'_aug_'+str(is_ag))   
+            model_name=model_name+'_'+str(model_rl)+'_aug_'+str(is_ag)+"_"+ver)   
     
     trainer.train()
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print("Usage: python train_models.py <model_name> <model_rl>")
         sys.exit(1)
     model_name = sys.argv[1]
     model_rl = sys.argv[2]
     is_ag = sys.argv[3] == 'True'
-    main(model_name,float(model_rl),is_ag)
+    ver = sys.argv[4]
+    main(model_name,float(model_rl),is_ag,ver)
     
