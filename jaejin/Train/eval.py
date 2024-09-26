@@ -73,7 +73,7 @@ model = models.convnext_base(weights=weights)
 
 model.load_state_dict(
     torch.load(
-        os.path.join(save_result_path+"/convnext_base", "convnext_base0.0003.pt"),
+        os.path.join(save_result_path+"/convnext_base_0.0003_aug_True_balance_no_cut", "convnext_base_0.0003_aug_True_balance_no_cut_Acc_0.9238_best_model.pt"),
         map_location='cpu'
     )
 )
@@ -92,4 +92,4 @@ test_info = test_info.reset_index().rename(columns={"index": "ID"})
 test_info
 
 # DataFrame 저장
-test_info.to_csv("convnext_base0.0003.csv", index=False)
+test_info.to_csv("convnext_base95.csv", index=False)
