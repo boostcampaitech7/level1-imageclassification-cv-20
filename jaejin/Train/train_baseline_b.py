@@ -17,19 +17,27 @@ def main(model_name,model_rl,is_ag,ver):
     traindata_dir = dir+"/data/train"
     traindata_info_file = dir+"/data/train.csv"
     save_result_path = dir+"/train_result"
-
     train_info = pd.read_csv(traindata_info_file)
+    # _, val_df = train_test_split(
+    #     train_info, 
+    #     test_size=0.2,
+    #     random_state=20,
+    #     stratify=train_info['target']
+    #     )
+    
+    bnc_dir = dir+"/data/balanced_dataset_no_cutmix"
+    bnc_info_file = dir+"/data/balanced_nc_info.csv"
+    bnc_info = pd.read_csv(bnc_info_file)
     train_df, val_df = train_test_split(
-        train_info, 
+        bnc_info, 
         test_size=0.2,
         random_state=20,
-        stratify=train_info['target']
+        stratify=bnc_info['target']
         )
-
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\nTraining and evaluating {model_name}")
-    if int(ver) <4:
+    if int(ver) >=4:
         model, preprocess = get_model_and_transforms(model_name,ver)
         model = model.to(device)
     else:
@@ -37,7 +45,7 @@ def main(model_name,model_rl,is_ag,ver):
         model, preprocess = get_model_and_transforms(model_name,ver)
         model.load_state_dict(
             torch.load(
-                os.path.join(save_result_path+"/convnext_base_0.001_aug_True4", "convnext_base_0.001_aug_True4_Acc_0.8562_best_model.0001_aug_True_Acc_0.8529_best_model.pt"),
+                os.path.join(save_result_path+"/convnext_base_0.0003_aug_True_balance_no_cut", "convnext_base_0.0003_aug_True_balance_no_cut_Acc_0.9092_best_model.pt"),
                 map_location='cpu'
             )
         )
@@ -78,12 +86,12 @@ def main(model_name,model_rl,is_ag,ver):
         ]) 
     
     train_dataset = CustomDataset(
-    root_dir=traindata_dir,
+    root_dir=bnc_dir,
     info_df=train_df,
     transform=data_transforms)
 
     val_dataset = CustomDataset(
-    root_dir=traindata_dir,
+    root_dir=bnc_dir,
     info_df=val_df,
     transform=val_data_transforms
     )
@@ -98,14 +106,13 @@ def main(model_name,model_rl,is_ag,ver):
         batch_size=64, 
         shuffle=False
     )    
-
     # 스케줄러 초기화
     scheduler_step_size = 2 # 매 30step마다 학습률 감소
     scheduler_gamma = 1
 
     # 한 epoch당 step 수 계산
     steps_per_epoch = len(train_loader)
-    optimizer = optim.SGD(model.parameters(), lr= model_rl, momentum=0.9)
+    optimizer = optim.Adam(model.parameters(), lr= model_rl)#, momentum=0.9
     loss_fn = nn.CrossEntropyLoss()
     # 2 epoch마다 학습률을 감소시키는 스케줄러 선언
     epochs_per_lr_decay = 5
@@ -117,7 +124,12 @@ def main(model_name,model_rl,is_ag,ver):
         gamma=scheduler_gamma
     )    
 
-
+    if ver=="4":
+        ver="basic"
+    elif ver=="5":
+        ver="balance"
+    elif ver=="6":
+        ver="balance_no_cut"
     trainer = Trainer(model,
             device,
             train_loader, 
@@ -127,7 +139,7 @@ def main(model_name,model_rl,is_ag,ver):
             loss_fn,  
             epochs=30, 
             result_path=save_result_path,
-            model_name=model_name+'_'+str(model_rl)+'_aug_'+str(is_ag)+ver)   
+            model_name=model_name+'_'+str(model_rl)+'_aug_'+str(is_ag)+"_"+ver)   
     
     trainer.train()
 

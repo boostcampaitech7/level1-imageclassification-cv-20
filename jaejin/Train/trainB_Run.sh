@@ -30,23 +30,15 @@ python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
 variable1="dino-vitb8"
 python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
 END
+# variable4="3"
+# variable3="True"
+# variable2="1e-3"
+# variable1="dino-vitb8"
+# python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4"
+
 variable4="1"
 variable3="False"
-variable2="8e-4"
-variable1="dino-vitb8"
-python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4"
-
-variable4="2"
-variable3="False"
-variable2="8e-4"
-variable1="dino-vitb8"
-python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4"
-
-variable4="3"
-variable3="False"
-variable2="8e-4"
-variable1="dino-vitb8"
-python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4"
-
-
+variable2="3e-4"
+variable1="efficientnet_b1"
+python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4" 
 

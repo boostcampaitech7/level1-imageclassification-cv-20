@@ -80,7 +80,7 @@ class CLIPDataset(Dataset):
             text = mini_imagenet_cls_map[classes]
             if self.use_print:
                 print(str(text))
-        
+        print("img_path",img_path)
         
         if self.is_inference:
             return image#self.processor(images=image, return_tensors="pt", padding=True).to(self.device)
@@ -113,7 +113,7 @@ class CustomDataset(Dataset):
         img_path = os.path.join(self.root_dir, self.image_paths[index])  # 이미지 경로 조합
         image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  # 이미지를 BGR 컬러 포맷의 numpy array로 읽어옵니다.
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR 포맷을 RGB 포맷으로 변환합니다.
-        image = self.transform(image=image)['image']   # 설정된 이미지 변환을 적용합니다.
+        image = self.transform(image=image)   # 설정된 이미지 변환을 적용합니다.
 
         if self.is_inference:
             return image
@@ -181,7 +181,56 @@ class AlbumentationsTransformTest:
         transformed = self.transform(image=image)  # 이미지에 설정된 변환을 적용
         
         return transformed['image']  # 변환된 이미지의 텐서를 반환    
+class SketchImageAugmentation:
+    def __init__(self, is_train: bool = True):
+        # 공통 변환 설정: 이미지 리사이즈, 정규화, 텐서 변환
+        common_transforms = [
+            A.Resize(224, 224),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2()
+        ]
 
+        if is_train:
+            # 훈련용 변환: 랜덤 수평 뒤집기, 랜덤 회전, 색상 조정 추가
+            self.transform = A.Compose(
+                [# Geometric transformations
+                    A.Rotate(limit=10, p=0.5),
+                    A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
+                    A.ElasticTransform(alpha=0.5, sigma=5, alpha_affine=5, p=0.5),
+
+                    ## Morphological transformations
+                    #A.Erosion(kernel=(1, 2), p=0.5),
+                    #A.Dilation(kernel=(1, 2), p=0.5),
+
+                    # Noise and blur
+                    A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
+                    A.MotionBlur(blur_limit=(3, 7), p=0.5),
+
+                    # Sketch-specific augmentations
+                    A.CoarseDropout(max_holes=8, max_height=16, max_width=16, fill_value=255, p=0.5),
+
+                    # Advanced techniques
+                    A.OneOf([
+                        # A.AutoContrast(p=0.5),
+                        A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5),
+                    ], p=0.5),
+                    A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
+                ] + common_transforms
+            )
+        else:
+            # 검증/테스트용 변환: 공통 변환만 적용
+            self.transform = A.Compose(common_transforms)
+
+    def __call__(self, image) -> torch.Tensor:
+        # 이미지가 NumPy 배열인지 확인
+        if not isinstance(image, np.ndarray):
+            raise TypeError("Image should be a NumPy array (OpenCV format).")
+        
+        # 이미지에 변환 적용 및 결과 반환
+        transformed = self.transform(image=image)  # 이미지에 설정된 변환을 적용
+        
+        return transformed['image']  # 변환된 이미지의 텐서를 반환
+    
 class AlbumentationsTransform:
     def __init__(self, is_train: bool = True):
         # 공통 변환 설정: 이미지 리사이즈, 정규화, 텐서 변환
@@ -240,7 +289,7 @@ class TransformSelector:
     def __init__(self, transform_type: str):
 
         # 지원하는 변환 라이브러리인지 확인
-        if transform_type in ["torchvision", "albumentations","AlbumentationsTransformTest"]:
+        if transform_type in ["torchvision", "albumentations","AlbumentationsTransformTest","sketch_albumentations"]:
             self.transform_type = transform_type
         
         else:
@@ -258,6 +307,9 @@ class TransformSelector:
         elif self.transform_type == 'AlbumentationsTransformTest':
             transform = AlbumentationsTransformTest(is_train=is_train)
     
+        elif self.transform_type == 'sketch_albumentations':
+            transform = SketchImageAugmentation(is_train=is_train)
+
         return transform
     
 class SimpleCNN(nn.Module):
@@ -852,7 +904,7 @@ class DINOViTClassifier(nn.Module):
 
         return logits
 
-def get_model_and_transforms(model_name,ver="1"):
+def get_model_and_transforms(model_name,val="1"):
    
     if model_name == "resnet18":
         weights = models.ResNet18_Weights.DEFAULT
@@ -915,7 +967,7 @@ def get_model_and_transforms(model_name,ver="1"):
         preprocess = weights.transforms()
 
     elif model_name == "dino-vitb8":
-        model = DINOViTClassifier(500,ver)
+        model = DINOViTClassifier(500,val)
         preprocess = ViTFeatureExtractor.from_pretrained('facebook/dino-vitb8')
     else:
         raise ValueError(f"Unsupported model: {model_name}")
