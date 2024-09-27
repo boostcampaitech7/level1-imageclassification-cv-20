@@ -192,25 +192,34 @@ def get_trainer(train_loader, val_loader) -> Trainer:
 
 
 model_name = config.MODEL_NAME
-traindata_dir = config.TRAIN_DATA_DIR
-traindata_info_file = os.path.join(traindata_dir, '../train.csv')
-traindata_info_file = os.path.abspath(traindata_info_file)
+# traindata_dir = config.TRAIN_DATA_DIR
+# traindata_info_file = os.path.join(traindata_dir, '../trainDelFlip_objectsplit_train_upWithcanny.csv')
+# traindata_info_file = os.path.abspath(traindata_info_file)
 save_result_path = config.CHECKPOINT_DIR
 
-train_info = pd.read_csv(traindata_info_file)
+# train_info = pd.read_csv(traindata_info_file)
 
-train_df, val_df = train_test_split(train_info, test_size=1-config.TRAIN_RATIO,
-stratify=train_info['target'],random_state=20)
+# train_df, val_df = train_test_split(train_info, test_size=1-config.TRAIN_RATIO,
+# stratify=train_info['target'],random_state=20)
 
 # 학습에 사용할 Transform을 선언.
 transform_selector = TransformSelector(transform_type = 'sketch_albumentations')
 train_transform = transform_selector.get_transform(is_train=True)
 val_transform = transform_selector.get_transform(is_train=False)
 
+# 데이터셋 로드 (canny)
+traindata_dir = "./data/trainDelFlip_objectsplit_train_upWithcanny"
+valdata_dir = "./data/trainDelFlip_objectsplit_val"
 
-# 데이터셋 로드
+train_df = pd.read_csv("./data/trainDelFlip_objectsplit_train_upWithcanny.csv")
+val_df = pd.read_csv("./data/trainDelFlip_objectsplit_val.csv")
+
 train_dataset = CustomDataset(root_dir=traindata_dir,info_df=train_df,transform=train_transform)
-val_dataset = CustomDataset(root_dir=traindata_dir,info_df=val_df,transform=val_transform)
+val_dataset = CustomDataset(root_dir=valdata_dir,info_df=val_df,transform=val_transform)
+
+# # 데이터셋 로드
+# train_dataset = CustomDataset(root_dir=traindata_dir,info_df=train_df,transform=train_transform)
+# val_dataset = CustomDataset(root_dir=traindata_dir,info_df=val_df,transform=val_transform)
 
 # 데이터 로더 생성
 train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True)

@@ -1,10 +1,10 @@
 class Config:
     # 데이터 관련
-    TRAIN_DATA_DIR = "./yookyung/data/train"
-    TEST_DATA_DIR = './yookyung/data/test'
+    TRAIN_DATA_DIR = "./data/trainDelFlip_objectsplit_train_upWithcanny"
+    TEST_DATA_DIR = './data/test'
 
     TRAIN_RATIO = 0.8
-    BATCH_SIZE = 64
+    BATCH_SIZE = 32
     IMAGE_SIZE = (224, 224)
     
     # K-fold 관련
