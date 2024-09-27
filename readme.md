@@ -20,11 +20,11 @@
 
 <div align=center>
 
-|<img src="https://avatars.githubusercontent.com/kaeh3403" width="80"> |<img src="https://avatars.githubusercontent.com/sweetpotato15" width="80">|<img src="https://avatars.githubusercontent.com/jeajin" width='80'>|<img src="https://avatars.githubusercontent.com/SuyoungPark11" width='80'>|<img src="https://avatars.githubusercontent.com/PollinKim" width='80'>|<img src="https://avatars.githubusercontent.com/uddaniiii" width='80'>|
+|<img src="https://avatars.githubusercontent.com/PollinKim" width='80'>|<img src="https://avatars.githubusercontent.com/kaeh3403" width="80"> |<img src="https://avatars.githubusercontent.com/sweetpotato15" width="80">|<img src="https://avatars.githubusercontent.com/jeajin" width='80'>|<img src="https://avatars.githubusercontent.com/SuyoungPark11" width='80'>|<img src="https://avatars.githubusercontent.com/uddaniiii" width='80'>|
 |:---:|:---:|:---:|:---:|:---:|:---:|
-[**김성규**](https://github.com/kaeh3403) | [**김유경**](https://github.com/sweetpotato15) | [**김재진**](https://github.com/jeajin) | [**박수영**](https://github.com/SuyoungPark11) | [**김경수**](https://github.com/PollinKim) | [**이단유**](https://github.com/uddaniiii)
-|T7118|T7125|T7127|T7150|T7174|T7217|
-|ㄴㅇㄴㄹ <br> ㅇㄹㄴㄴㅇ|ㅇㄹㅇㄹ|ㄹㅇㄹㅇ| ㅇㄹㄴ| ㅇㄴㄹ|ㄴㄹㅇ
+[**김경수**](https://github.com/PollinKim) |[**김성규**](https://github.com/kaeh3403) | [**김유경**](https://github.com/sweetpotato15) | [**김재진**](https://github.com/jeajin) | [**박수영**](https://github.com/SuyoungPark11) | [**이단유**](https://github.com/uddaniiii)
+T7174|T7118|T7125|T7127|T7150|T7217|
+|데이터 전처리<br>협업 툴 관리|데이터 전처리<br>모델 적용|데이터 증강<br>모델 적용| 개발 환경 세팅<br>모델 적용|데이터 증강<br>모델 적용|데이터셋 분석<br>모델 적용
 
 </div>
 
