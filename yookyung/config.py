@@ -1,4 +1,7 @@
 class Config:
+    # 새로운 데이터셋 사용 여부
+    NEW_DATASET = False
+
     # 데이터 관련
     TRAIN_DATA_DIR = "./yookyung/data/train"
     TEST_DATA_DIR = './yookyung/data/test'
@@ -13,7 +16,7 @@ class Config:
     
     # cutmix 관련
     IS_CUTMIX = True
-    
+
     # 모델 관련
     MODEL_TYPE = 'timm' # torchvision, timm
     MODEL_NAME = 'convnext_base'

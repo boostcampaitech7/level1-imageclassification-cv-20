@@ -17,8 +17,6 @@ from models.scheduler import get_scheduler
 
 from utils import cutmix_batch
 
-from sklearn.model_selection import StratifiedKFold
-import numpy as np
 
 class Trainer:
     def __init__(
@@ -39,7 +37,7 @@ class Trainer:
         self.result_path = config.CHECKPOINT_DIR # 모델 저장 경로
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
-        self.high_acc = 0.0
+        self.high_acc = 0.0 # 가장 높은 Accuracy를 저장할 변수
 
     def save_model(self, epoch, loss, acc):
         # 모델 저장 경로 설정
@@ -96,7 +94,6 @@ class Trainer:
                 loss = (loss_original + loss_mixed) / 2
 
 
-            # 공통
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
