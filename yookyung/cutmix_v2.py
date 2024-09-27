@@ -193,7 +193,7 @@ def get_trainer(train_loader, val_loader) -> Trainer:
 
 model_name = config.MODEL_NAME
 traindata_dir = config.TRAIN_DATA_DIR
-traindata_info_file = os.path.join(traindata_dir, '../train.csv')
+traindata_info_file = os.path.join(traindata_dir, '../trainDelFlip_objectsplit_up.csv')
 traindata_info_file = os.path.abspath(traindata_info_file)
 save_result_path = config.CHECKPOINT_DIR
 
