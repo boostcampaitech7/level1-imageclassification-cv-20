@@ -32,11 +32,6 @@ python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
 END
 
 
-variable4="4"
-variable3="True"
-variable2="3e-4"
-variable1="convnext_base"
-python train_baseline_ag.py "$variable1" "$variable2" "$variable3" "$variable4"
-
-
-
+variable1="dino-vitb8"
+python train_baseline_ag.py "$variable1" "$variable2" "$variable3"
+END

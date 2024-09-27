@@ -1,7 +1,7 @@
 class Config:
     # 데이터 관련
-    TRAIN_DATA_DIR = "./data/trainDelFlip_objectsplit_train_upWithcanny"
-    TEST_DATA_DIR = './data/test'
+    TRAIN_DATA_DIR = "./yookyung/data/train"
+    TEST_DATA_DIR = './yookyung/data/test'
 
     TRAIN_RATIO = 0.8
     BATCH_SIZE = 32
@@ -20,7 +20,7 @@ class Config:
     # 훈련 관련
     EPOCHS = 30
     LEARNING_RATE = 0.0003
-    OPTIMIZER = "adam"
+    OPTIMIZER = "adam" # sgd, adam
 
     # 손실함수 관련
     LOSS = "cross_entropy" # cross_entropy, bce_with_logits, mse, kldivloss
@@ -50,7 +50,7 @@ class Config:
     SEED = 20
     
     # 로깅 및 체크포인트
-    CHECKPOINT_DIR = f"./yookyung/train_result/{MODEL_NAME}"
+    CHECKPOINT_DIR = f"./yookyung/train_result/{MODEL_NAME}_{LEARNING_RATE}"
     # SAVE_TOP_K = 3  # 저장할 최상위 모델 수
     
     # 평가 관련

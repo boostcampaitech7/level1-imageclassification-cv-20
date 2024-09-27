@@ -8,124 +8,95 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import torch.optim as optim
 from torch.utils.data import DataLoader
-import pandas as pd
-from functions import CustomDataset, Trainer, get_model_and_transforms
-from sklearn.model_selection import train_test_split
+from tqdm.auto import tqdm
+from functions import *
 
-def main(model_name,model_rl,is_ag):
-    dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
-    traindata_dir = dir+"/data/train"
-    traindata_info_file = dir+"/data/train.csv"
-    save_result_path = dir+"/train_result"
 
-    train_info = pd.read_csv(traindata_info_file)
-    train_df, val_df = train_test_split(
-        train_info, 
-        test_size=0.2,
-        random_state=20,
-        stratify=train_info['target']
-        )
+def inference(
+    model: nn.Module, 
+    device: torch.device, 
+    test_loader: DataLoader
+):
+    # 모델을 평가 모드로 설정
+    model.to(device)
+    model.eval()
     
+    predictions = []
+    with torch.no_grad():  # Gradient 계산을 비활성화
+        for images in tqdm(test_loader):
+            # 데이터를 같은 장치로 이동
+            images = images.to(device)
+            
+            # 모델을 통해 예측 수행
+            logits = model(images)
+            logits = F.softmax(logits, dim=1)
+            preds = logits.argmax(dim=1)
+            
+            # 예측 결과 저장
+            predictions.extend(preds.cpu().detach().numpy())  # 결과를 CPU로 옮기고 리스트에 추가
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"\nTraining and evaluating {model_name}")
-    model, preprocess = get_model_and_transforms(model_name)
-    model = model.to(device)
+    return predictions
 
-    if is_ag:
-        data_transforms = A.Compose([
-        # Geometric transformations
-            A.Rotate(limit=10, p=0.5),
-            A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
-            A.ElasticTransform(alpha=1, sigma=10, p=0.5),
-            # Noise and blur
-            A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
-            A.MotionBlur(blur_limit=(3, 7), p=0.5),           
-            # Sketch-specific augmentations
-            A.CoarseDropout(max_holes=8, max_height=16, max_width=16, fill_value=255, p=0.5),
-            # Advanced techniques
-            A.OneOf([
-                # A.AutoContrast(p=0.5),
-                A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5),
-            ], p=0.5),
-            A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
-            A.Resize(224, 224), 
-            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), 
-            ToTensorV2() 
-        ])  
-    else:
-        data_transforms = A.Compose([
-            A.Resize(224, 224), 
-            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), 
-            ToTensorV2() 
-        ])  
+dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
+testdata_dir = dir+"/data/test"
+testdata_info_file = dir+"/data/test.csv"
+save_result_path = dir+"/train_result"
 
-    val_data_transforms = A.Compose([
-            A.Resize(224, 224), 
-            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), 
-            ToTensorV2() 
-        ]) 
-    
-    train_dataset = CustomDataset(
-    root_dir=traindata_dir,
-    info_df=train_df,
-    transform=data_transforms)
+# 추론 데이터의 class, image path, target에 대한 정보가 들어있는 csv파일을 읽기.
+test_info = pd.read_csv(testdata_info_file)
 
-    val_dataset = CustomDataset(
-    root_dir=traindata_dir,
-    info_df=val_df,
-    transform=val_data_transforms
+# 총 class 수.
+num_classes = 500
+
+# 추론에 사용할 Transform을 선언.
+transform_selector = TransformSelector(
+    transform_type = "albumentations"
+)
+test_transform = transform_selector.get_transform(is_train=False)
+
+# 추론에 사용할 Dataset을 선언.
+test_dataset = CustomDataset(
+    root_dir=testdata_dir,
+    info_df=test_info,
+    transform=test_transform,
+    is_inference=True
+)
+
+# 추론에 사용할 DataLoader를 선언.
+test_loader = DataLoader(
+    test_dataset, 
+    batch_size=64, 
+    shuffle=False,
+    drop_last=False
+)
+
+# 추론에 사용할 장비를 선택.
+# torch라이브러리에서 gpu를 인식할 경우, cuda로 설정.
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# 추론에 사용할 Model을 선언.
+weights = models.ConvNeXt_Base_Weights.DEFAULT
+model = models.convnext_base(weights=weights)
+
+model.load_state_dict(
+    torch.load(
+        os.path.join(save_result_path+"/convnext_base", "convnext_base0.0003.pt"),
+        map_location='cpu'
     )
+)
 
-    train_loader = DataLoader(
-        train_dataset, 
-        batch_size=32, 
-        shuffle=True
-    )
-    val_loader = DataLoader(
-        val_dataset, 
-        batch_size=32, 
-        shuffle=False
-    )    
+# predictions를 CSV에 저장할 때 형식을 맞춰서 저장
+# 테스트 함수 호출
+predictions = inference(
+    model=model, 
+    device=device, 
+    test_loader=test_loader
+)
 
-    # 스케줄러 초기화
-    scheduler_step_size = 30 # 매 30step마다 학습률 감소
-    scheduler_gamma = 1  
+# 모든 클래스에 대한 예측 결과를 하나의 문자열로 합침
+test_info['target'] = predictions
+test_info = test_info.reset_index().rename(columns={"index": "ID"})
+test_info
 
-    # 한 epoch당 step 수 계산
-    steps_per_epoch = len(train_loader)
-    optimizer = optim.Adam(model.parameters(), lr= model_rl)
-    loss_fn = nn.CrossEntropyLoss()
-    # 2 epoch마다 학습률을 감소시키는 스케줄러 선언
-    epochs_per_lr_decay = 5
-    scheduler_step_size = steps_per_epoch * epochs_per_lr_decay
-
-    scheduler = optim.lr_scheduler.StepLR(
-        optimizer, 
-        step_size=scheduler_step_size, 
-        gamma=scheduler_gamma
-    )    
-
-
-    trainer = Trainer(model,
-            device,
-            train_loader, 
-            val_loader,
-            optimizer, 
-            scheduler, 
-            loss_fn,  
-            epochs=50, 
-            result_path=save_result_path,
-            model_name=model_name+'_'+str(model_rl)+'_aug_'+str(is_ag))   
-    
-    trainer.train()
-
-if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python train_models.py <model_name> <model_rl>")
-        sys.exit(1)
-    model_name = sys.argv[1]
-    model_rl = sys.argv[2]
-    is_ag = sys.argv[3] == 'True'
-    main(model_name,float(model_rl),is_ag)
-    
+# DataFrame 저장
+test_info.to_csv("convnext_base0.0003.csv", index=False)

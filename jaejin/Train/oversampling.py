@@ -150,4 +150,3 @@ dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
 oversampling(data_dir = dir+'/data/trainDelFlip_objectsplit_train',
             output_dir = dir+'/data/trainDelFlip_objectsplit_train_up'
             )
-

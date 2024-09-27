@@ -271,6 +271,7 @@ class Trainer:
                 _, target_labels = torch.max(targets, 1)
                 total += targets.size(0)
                 correct += (predicted == target_labels).sum().item()
+                correct += (predicted == target_labels).sum().item()
 
                 progress_bar.set_postfix(loss=loss.item(), acc=correct/total)
         

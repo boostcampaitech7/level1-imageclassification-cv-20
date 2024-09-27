@@ -7,9 +7,11 @@ import torch.nn.functional as F
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader, Dataset
 
+from src.dataset import *
 #from src.transform import *
 #from models.models import *
 from functions import *
+from config import config
 
 def inference(model: nn.Module, device: torch.device, test_loader: DataLoader):
     model.to(device)
@@ -37,19 +39,19 @@ def ensemble_inference(models: List[nn.Module], device: torch.device, test_loade
 
     return ensemble_predictions
 
-testdata_dir = '/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/data/test'
+testdata_dir = config.TEST_DATA_DIR
 testdata_info_file = os.path.join(testdata_dir, '../test.csv')
 testdata_info_file = os.path.abspath(testdata_info_file)
-#save_result_path = f"./train_result/{MODEL_NAME}_{LEARNING_RATE}"
+save_result_path = config.CHECKPOINT_DIR
 
-# if not os.path.exists(save_result_path):
-#     os.makedirs(save_result_path)
-print(testdata_info_file)
+if not os.path.exists(save_result_path):
+    os.makedirs(save_result_path)
+
 test_info = pd.read_csv(testdata_info_file)
-num_classes = 500
+num_classes = config.NUM_CLASSES
 
 transform_selector = TransformSelector(transform_type="albumentations")
-test_transform = transform_selector.get_transform(is_train=True)
+test_transform = transform_selector.get_transform(is_train=False)
 
 test_dataset = CustomDataset(
     root_dir=testdata_dir,
@@ -60,18 +62,18 @@ test_dataset = CustomDataset(
 
 test_loader = DataLoader(
     test_dataset, 
-    batch_size=64,
+    batch_size=config.BATCH_SIZE, 
     shuffle=False,
     drop_last=False
 )
 
-device = "cuda" if torch.cuda.is_available() else 'cpu'
+device = config.DEVICE if torch.cuda.is_available() else 'cpu'
 
 # 앙상블할 모델 목록 정의
 model_configs = [
-    {"model_type": 'timm', "model_name": "efficientnet_b1", "weights_path": "efficientnet_b1_0.0003_aug_False_1_Acc_0.7832_best_model.pt"},
+    {"model_type": 'timm', "model_name": "efficientnet_b1", "weights_path": "effi.pt"},
     {"model_type": 'timm', "model_name": "convnext_base", "weights_path": "conv.pt"},
-   {"model_type": 'timm', "model_name": "dino-vitb8", "weights_path": "dino-vitb8_0.0008_aug_False1_Acc_0.7464_best_model.pt"},
+   {"model_type": 'timm', "model_name": "dino-vitb8", "weights_path": "dino.pt"},
 ]
 dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/jaejin/Train"
 modelss = []
@@ -88,7 +90,7 @@ modelss.append(model)
 
 model_selector = ModelSelector(
         model_type=model_configs[1]["model_type"],
-        num_classes=500,
+        num_classes=config.NUM_CLASSES,
         model_name=model_configs[1]["model_name"],
         pretrained=False
     )
@@ -99,7 +101,7 @@ model.load_state_dict(torch.load(model_configs[1]["weights_path"], map_location=
 modelss.append(model)
 
 
-model,_ = get_model_and_transforms(model_configs[2]["model_name"],val="1")
+model,_ = get_model_and_transforms(model_configs[2]["model_name"],val="2")
 model.load_state_dict(
     torch.load(
         os.path.join(dir, model_configs[2]["weights_path"]),
@@ -111,45 +113,14 @@ modelss.append(model)
 
 # 앙상블 추론 실행
 ensemble_predictions = ensemble_inference(modelss, device, test_loader)
+print(ensemble_predictions[0].shape)
+# # 앙상블 결과 처리 및 저장
+# ensemble_classes = np.argmax(ensemble_predictions, axis=1)
+# test_info['target'] = ensemble_classes
+# test_info = test_info.reset_index().rename(columns={"index": "ID"})
 
-from clipeval import *
-clip = getClip()
-t = clip.inference()
+# # 결과 저장
+# ensemble_output_path = f"{config.RESULT_DIR}/ensemble_output.csv"
+# test_info.to_csv(ensemble_output_path, index=False)
 
-keys_list = list(get_imagenet_ditction(mini=True,values=False).keys())
-tt=[keys_list[index] for index in t]
-name_info_file = dir+"/data/name_label.csv"
-name_data = pd.read_csv(name_info_file)
-test_info = np.array([name_data[name_data["class_name"] == classes]["target"].values for classes in tt])
-a=np.argmax(ensemble_predictions[0],axis=1)
-b=np.argmax(ensemble_predictions[1],axis=1)
-c=np.argmax(ensemble_predictions[2],axis=1)
-d = test_info.squeeze()
-traindata_info_file = "/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20/data/train.csv"
-train_info = pd.read_csv(traindata_info_file)
-e = np.array(train_info["target"])
-count= [0,0,0,0]
-for index in range(len(e)):
-    if a[index] == e[index]:
-            count[0]+=1
-    if b[index] == e[index]:
-            count[1]+=1
-    if c[index] == e[index]:
-            count[2]+=1
-    if d[index] == e[index]:
-            count[3]+=1
-
-for co in count:
-    print(co/len(e))
-
-balanced_dataset_info = []
-for index in range(len(e)):  
-  
-    balanced_dataset_info.append({
-        'effi': a[index],
-        'conv': b[index],
-        'dino': c[index],
-        'clip': d[index],
-        'tar': e[index]
-    })
-pd.DataFrame(balanced_dataset_info).to_csv('tempVal.csv', index=False)
+# print(f"Ensemble predictions saved to {ensemble_output_path}")

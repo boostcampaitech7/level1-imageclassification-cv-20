@@ -50,7 +50,7 @@ def getClip():
 
     from transformers import CLIPProcessor, CLIPModel,AdamW
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    save_result_path = dir+"/clip_1e-05_multiprompt_False_textFrozen_False_Acc_0.8196_best_model.pt"
+    save_result_path = dir+"/clip_1e-05.pt"
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
@@ -67,10 +67,14 @@ def getClip():
     )
     train_transform = transform_selector.get_transform(is_train=True)
     test_transform = transform_selector.get_transform(is_train=False)
-    
+    train_df, val_df = train_test_split(
+        train_info, 
+        test_size=0.2,
+        stratify=train_info['target']
+    )
     train_dataset = CLIPDataset(
         root_dir=traindata_dir,
-        info_df=train_info,
+        info_df=train_df,
         transform=train_transform,
         processor=processor,
         device=device,

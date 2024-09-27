@@ -13,20 +13,27 @@ from functions import CustomDataset, Trainer, get_model_and_transforms
 from sklearn.model_selection import train_test_split
 
 def main(model_name,model_rl,is_ag,ver):
-def main(model_name,model_rl,is_ag,ver):
     dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
     traindata_dir = dir+"/data/train"
     traindata_info_file = dir+"/data/train.csv"
     save_result_path = dir+"/train_result"
-
     train_info = pd.read_csv(traindata_info_file)
-    train_df, val_df = train_test_split(
+    _, val_df = train_test_split(
         train_info, 
         test_size=0.2,
         random_state=20,
         stratify=train_info['target']
         )
-
+    
+    bnc_dir = dir+"/data/balanced_dataset_no_cutmix"
+    bnc_info_file = dir+"/data/balanced_nc_info.csv"
+    bnc_info = pd.read_csv(bnc_info_file)
+    train_df, _ = train_test_split(
+        bnc_info, 
+        test_size=0.2,
+        random_state=20,
+        stratify=bnc_info['target']
+        )
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\nTraining and evaluating {model_name}")
@@ -38,7 +45,7 @@ def main(model_name,model_rl,is_ag,ver):
         model, preprocess = get_model_and_transforms(model_name,ver)
         model.load_state_dict(
             torch.load(
-                os.path.join(save_result_path+"/convnext_base_0.001_aug_True4", "convnext_base_0.001_aug_True4_Acc_0.8562_best_model.pt"),
+                os.path.join(save_result_path+"/convnext_base_0.0003_aug_True_balance_no_cut", "convnext_base_0.0003_aug_True_balance_no_cut_Acc_0.9238_best_model.pt"),
                 map_location='cpu'
             )
         )
@@ -79,7 +86,7 @@ def main(model_name,model_rl,is_ag,ver):
         ]) 
     
     train_dataset = CustomDataset(
-    root_dir=traindata_dir,
+    root_dir=bnc_dir,
     info_df=train_df,
     transform=data_transforms)
 
@@ -92,25 +99,19 @@ def main(model_name,model_rl,is_ag,ver):
     train_loader = DataLoader(
         train_dataset, 
         batch_size=64, 
-        batch_size=64, 
         shuffle=True
     )
     val_loader = DataLoader(
         val_dataset, 
         batch_size=64, 
-        batch_size=64, 
         shuffle=False
     )    
-
     # 스케줄러 초기화
-    scheduler_step_size = 2 # 매 30step마다 학습률 감소
-    scheduler_gamma = 1
     scheduler_step_size = 2 # 매 30step마다 학습률 감소
     scheduler_gamma = 1
 
     # 한 epoch당 step 수 계산
     steps_per_epoch = len(train_loader)
-    optimizer = optim.SGD(model.parameters(), lr= model_rl, momentum=0.9)
     optimizer = optim.SGD(model.parameters(), lr= model_rl, momentum=0.9)
     loss_fn = nn.CrossEntropyLoss()
     # 2 epoch마다 학습률을 감소시키는 스케줄러 선언
@@ -137,7 +138,6 @@ def main(model_name,model_rl,is_ag,ver):
             scheduler, 
             loss_fn,  
             epochs=30, 
-            epochs=30, 
             result_path=save_result_path,
             model_name=model_name+'_'+str(model_rl)+'_aug_'+str(is_ag)+"_"+ver)   
     
@@ -145,14 +145,11 @@ def main(model_name,model_rl,is_ag,ver):
 
 if __name__ == "__main__":
     if len(sys.argv) != 5:
-    if len(sys.argv) != 5:
         print("Usage: python train_models.py <model_name> <model_rl>")
         sys.exit(1)
     model_name = sys.argv[1]
     model_rl = sys.argv[2]
     is_ag = sys.argv[3] == 'True'
-    ver = sys.argv[4]
-    main(model_name,float(model_rl),is_ag,ver)
     ver = sys.argv[4]
     main(model_name,float(model_rl),is_ag,ver)
     
