@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn as nn
+import torch.nn.functional as F
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader, Dataset
 
@@ -14,49 +15,10 @@ from models.loss import get_loss_function
 from models.optimizer import get_optimizer
 from models.scheduler import get_scheduler
 
+from utils import cutmix_batch
+
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
-
-# def perform_k_fold_cross_validation(train_info, config, get_trainer):
-#     # StratifiedKFold 객체 생성
-#     skf = StratifiedKFold(n_splits=config.K_FOLDS, shuffle=True, random_state=config.SEED)
-
-#     # 결과를 저장할 리스트
-#     fold_results = []
-
-#     # K-Fold 교차 검증 수행
-#     for fold, (train_idx, val_idx) in enumerate(skf.split(train_info, train_info['target']), 1):
-#         print(f"Fold {fold}/{config.K_FOLDS}")
-
-#         # 훈련 및 검증 데이터 분리
-#         train_df = train_info.iloc[train_idx]
-#         val_df = train_info.iloc[val_idx]
-
-#         # 데이터 로더 생성 (이 부분은 당신의 데이터 로딩 로직에 맞게 수정해야 합니다)
-#         train_loader = create_data_loader(train_df, config.TRAIN_BATCH_SIZE, shuffle=True)
-#         val_loader = create_data_loader(val_df, config.VAL_BATCH_SIZE, shuffle=False)
-
-#         # 트레이너 생성 및 훈련 수행
-#         trainer = get_trainer(train_loader, val_loader)
-#         trainer.train()
-
-#         # 최종 검증 정확도 저장
-#         fold_results.append(trainer.high_acc)
-
-#         print(f"Fold {fold} completed. Best validation accuracy: {trainer.high_acc:.4f}")
-#         print("-" * 50)
-
-#     # 전체 결과 출력
-#     print("\nK-Fold Cross Validation Results:")
-#     for fold, acc in enumerate(fold_results, 1):
-#         print(f"Fold {fold}: {acc:.4f}")
-#     print(f"Average validation accuracy: {np.mean(fold_results):.4f}")
-#     print(f"Standard deviation: {np.std(fold_results):.4f}")
-
-# # 사용 예시
-# if __name__ == "__main__":
-#     perform_k_fold_cross_validation(train_info, config, get_trainer)
-
 
 class Trainer:
     def __init__(
@@ -79,44 +41,29 @@ class Trainer:
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
         self.high_acc = 0.0
 
-    def save_model(self, epoch, loss):
+    def save_model(self, epoch, loss, acc):
         # 모델 저장 경로 설정
         os.makedirs(self.result_path, exist_ok=True)
 
         # 현재 에폭 모델 저장
-        current_model_path = os.path.join(self.result_path, f'model_epoch_{epoch}_loss_{loss:.4f}.pt')
+        current_model_path = os.path.join(self.result_path, f'model_epoch_{epoch}_loss_{loss:.4f}_acc_{acc:.4f}.pt')
         torch.save(self.model.state_dict(), current_model_path)
 
         # 최상위 3개 모델 관리
-        self.best_models.append((loss, epoch, current_model_path))
+        self.best_models.append((acc, epoch, current_model_path))
         self.best_models.sort()
         if len(self.best_models) > 3:
-            _, _, path_to_remove = self.best_models.pop(-1)  # 가장 높은 손실 모델 삭제
+            _, _, path_to_remove = self.best_models.pop(0)  # 가장 높은 손실 모델 삭제
             if os.path.exists(path_to_remove):
                 os.remove(path_to_remove)
 
-        # 가장 낮은 손실의 모델 저장
-        if loss < self.lowest_loss:
-            self.lowest_loss = loss
+        # 가장 높은 정확도의 모델 저장
+        if acc >  self.lowest_loss:
+            self.high_acc = acc
             best_model_path = os.path.join(self.result_path, 'best_model.pt')
             torch.save(self.model.state_dict(), best_model_path)
-            print(f"Save {epoch}epoch result. Loss = {loss:.4f}")
-
-        # # 최상위 3개 모델 관리
-        # self.best_models.append((acc, epoch, current_model_path))
-        # self.best_models.sort()
-        # if len(self.best_models) > 3:
-        #     _, _, path_to_remove = self.best_models.pop(0)  # 가장 낮은 정확도 모델 삭제
-        #     if os.path.exists(path_to_remove):
-        #         os.remove(path_to_remove)
-
-        # # 가장 낮은 손실의 모델 저장
-        # if acc > self.high_acc:
-        #     self.high_acc = acc
-        #     best_model_path = os.path.join(self.result_path, 'best_model.pt')
-        #     torch.save(self.model.state_dict(), best_model_path)
-        #     print(f"Save {epoch}epoch result. Accuracy = {acc:.4f}")
-
+            print(f"Save {epoch}epoch result. Accuracy = {acc:.4f}")
+ 
     def train_epoch(self) -> float:
         # 한 에폭 동안의 훈련을 진행
         self.model.train()
@@ -128,13 +75,35 @@ class Trainer:
         
         for images, targets in progress_bar:
             images, targets = images.to(self.device), targets.to(self.device)
+            
+            if not config.IS_CUTMIX: # cutmix 적용 안하는 경우
+                outputs = self.model(images)
+                loss = self.loss_fn(outputs, targets)
+
+            else: # cutmix 적용 하는 경우 
+                targets_one_hot = F.one_hot(targets, num_classes=config.NUM_CLASSES).float()
+
+                # 원본 데이터로 학습
+                outputs = self.model(images)
+                loss_original = self.loss_fn(outputs, targets_one_hot)
+
+                # CutMix 적용
+                images_mixed, targets_mixed = cutmix_batch(images, targets_one_hot)
+                outputs_mixed = self.model(images_mixed)
+                loss_mixed = self.loss_fn(outputs_mixed, targets_mixed)
+
+                # 두 손실을 합침
+                loss = (loss_original + loss_mixed) / 2
+
+
+            # 공통
             self.optimizer.zero_grad()
-            outputs = self.model(images)
-            loss = self.loss_fn(outputs, targets)
             loss.backward()
             self.optimizer.step()
 
             total_loss += loss.item()
+
+            # 원본 데이터에 대한 정확도 계산
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += (predicted == targets).sum().item()
@@ -155,7 +124,10 @@ class Trainer:
         with torch.no_grad():
             for images, targets in progress_bar:
                 images, targets = images.to(self.device), targets.to(self.device)
-                outputs = self.model(images)    
+                outputs = self.model(images)
+
+                if config.IS_CUTMIX:
+                    targets = F.one_hot(targets, num_classes=config.NUM_CLASSES).float() 
                 loss = self.loss_fn(outputs, targets)
 
                 total_loss += loss.item()

@@ -11,6 +11,9 @@ class Config:
     K_FOLDS = 5
     K_FOLD_USE = True
     
+    # cutmix 관련
+    IS_CUTMIX = True
+    
     # 모델 관련
     MODEL_TYPE = 'timm' # torchvision, timm
     MODEL_NAME = 'convnext_base'

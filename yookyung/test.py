@@ -79,7 +79,6 @@ test_loader = DataLoader(
 
 
 # 추론에 사용할 장비를 선택.
-# torch라이브러리에서 gpu를 인식할 경우, cuda로 설정.
 device = config.DEVICE if torch.cuda.is_available() else 'cpu'
 
 # 추론에 사용할 Model을 선언.
