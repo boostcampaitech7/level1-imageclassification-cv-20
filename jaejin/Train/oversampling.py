@@ -6,7 +6,12 @@ from albumentations.pytorch import ToTensorV2
 import torch
 from torchvision import transforms
 import random
-# CutMix 함수 정의
+from sklearn.model_selection import train_test_split
+import pandas as pd
+from tqdm.auto import tqdm
+
+
+#CutMix 함수 정의
 def cutmix(image1, image2, alpha=1.0):
     image1 = image1.resize((224, 224))
     image2 = image2.resize((224, 224))
@@ -77,6 +82,62 @@ def save_image_as_jpeg(img, save_path, quality=95):
 #     ToTensorV2(),
 # ])
 
+def oversampling(data_dir, output_dir):
+    # 클래스별 이미지 수 확인
+    class_names = os.listdir(data_dir)
+    class_distribution = {class_name: len(os.listdir(os.path.join(data_dir, class_name))) for class_name in class_names if class_name[0] == 'n'}
+
+    # 목표 이미지 수 설정 (예: 가장 많은 클래스의 이미지 수)
+    target_count = max(class_distribution.values())
+    print(target_count)
+    # 각 클래스에 대해 증강 수행
+    for class_name, count in tqdm(class_distribution.items()):
+        class_dir = os.path.join(data_dir, class_name)
+        output_class_dir = os.path.join(output_dir, class_name)
+        os.makedirs(output_class_dir, exist_ok=True)
+
+        images = [Image.open(os.path.join(class_dir, img)) for img in os.listdir(class_dir) 
+            if is_image_file(img) and not img.startswith('.')]
+        
+        #images = np.array(images, dtype=object) 
+        # 원본 이미지 복사
+        for i, img in enumerate(images):
+            new_array = np.array(img)
+            new_array.resize((224, 224))
+            save_image_as_jpeg(img, os.path.join(output_class_dir, f"{class_name}_{i}.JPEG"))
+
+
+        # 부족한 만큼 이미지 증강
+        augmented_count = count
+        while augmented_count < target_count:
+            # CutMix
+            # if len(images) > 1:
+            #     img1, img2 = random.sample(list(images), 2)
+            #     new_img = cutmix(img1, img2)
+            # else:
+            #     new_img = images[0].copy().resize((224, 224))
+
+            # cutmix 할거면 이곳 삭제
+            img1= random.sample(list(images), 1)[0]
+            img1 = img1.resize((224, 224))
+            img1 = np.array(img1)
+            if len(img1.shape) == 2:
+                img1 = np.stack((img1,)*3, axis=-1)
+            
+            # RandAugment
+            new_img = rand_augment(image=np.array(img1))['image']
+            new_img = new_img.permute(1, 2, 0).byte().numpy()
+
+            save_image_as_jpeg(new_img, os.path.join(output_class_dir, f"{class_name}_aug_{augmented_count}.JPEG"))
+            augmented_count += 1
+
+    print("Balanced dataset created and saved.")
+
+# 데이터셋 경로
+dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
+data_dir = dir+'/data/trainDelFlip_objectsplit_train'
+output_dir = dir+'/data/trainDelFlip_objectsplit_train_up'
+
 rand_augment = A.Compose([
     A.HorizontalFlip(p=0.5),  # 좌우 반전
     A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.5),  # 밝기 및 대비 조정
@@ -85,62 +146,7 @@ rand_augment = A.Compose([
     A.CoarseDropout(max_holes=20, max_height=20, max_width=20, min_holes=1, fill_value=0, p=0.8),
     ToTensorV2()  # 텐서로 변환
 ])
-
 dir="/data/ephemeral/home/cv20-proj1/level1-imageclassification-cv-20"
-traindata_dir = dir+"/data/train"
-traindata_info_file = dir+"/data/train.csv"
-save_result_path = dir+"/train_result"
-# 데이터셋 경로
-data_dir = dir+'/data/trainDelFlip'
-output_dir = dir+'/data/balanced_dataset_no_cutmix'
-
-# 클래스별 이미지 수 확인
-class_names = os.listdir(data_dir)
-
-class_distribution = {class_name: len(os.listdir(os.path.join(data_dir, class_name))) for class_name in class_names if class_name[0] == 'n'}
-
-# 목표 이미지 수 설정 (예: 가장 많은 클래스의 이미지 수)
-target_count = max(class_distribution.values())
-
-# 각 클래스에 대해 증강 수행
-for class_name, count in class_distribution.items():
-    class_dir = os.path.join(data_dir, class_name)
-    output_class_dir = os.path.join(output_dir, class_name)
-    os.makedirs(output_class_dir, exist_ok=True)
-
-    images = [Image.open(os.path.join(class_dir, img)) for img in os.listdir(class_dir) 
-          if is_image_file(img) and not img.startswith('.')]
-    
-    #images = np.array(images, dtype=object) 
-    # 원본 이미지 복사
-    for i, img in enumerate(images):
-        new_array = np.array(img)
-        new_array.resize((224, 224))
-        save_image_as_jpeg(img, os.path.join(output_class_dir, f"{class_name}_{i}.JPEG"))
-
-
-    # 부족한 만큼 이미지 증강
-    augmented_count = count
-    while augmented_count < target_count:
-        # CutMix
-        # if len(images) > 1:
-        #     img1, img2 = random.sample(list(images), 2)
-        #     new_img = cutmix(img1, img2)
-        # else:
-        #     new_img = images[0].copy().resize((224, 224))
-
-        # if do cutmix, erase
-        img1= random.sample(list(images), 1)[0]
-        img1 = img1.resize((224, 224))
-        img1 = np.array(img1)
-        if len(img1.shape) == 2:
-            img1 = np.stack((img1,)*3, axis=-1)
-        
-        # RandAugment
-        new_img = rand_augment(image=np.array(img1))['image']
-        new_img = new_img.permute(1, 2, 0).byte().numpy()
-
-        save_image_as_jpeg(new_img, os.path.join(output_class_dir, f"{class_name}_aug_{augmented_count}.JPEG"))
-        augmented_count += 1
-
-print("Balanced dataset created and saved.")
+oversampling(data_dir = dir+'/data/trainDelFlip_objectsplit_train',
+            output_dir = dir+'/data/trainDelFlip_objectsplit_train_up'
+            )

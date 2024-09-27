@@ -115,18 +115,6 @@ class CutMixDataset(Dataset):
         return len(self.dataset) * self.num_mix
 
     def __getitem__(self, idx):
-        # img1, label1 = self.dataset[idx % len(self.dataset)] # 현재 이미지
-        # img2, label2 = self.dataset[torch.randint(len(self.dataset), (1,)).item()] # 랜덤 이미지
-
-        # img1 = img1.unsqueeze(0)
-        # img2 = img2.unsqueeze(0)
-        
-        # mixed_img, soft_label = cutmix(torch.cat((img1, img2), 0),
-        #                                             torch.tensor([label1, label2]),
-        #                                            )
-
-        # return mixed_img[0], soft_label[0]
-
         img1, label1 = self.dataset[idx % len(self.dataset)] # 현재 이미지
         img1 = img1.unsqueeze(0)
         
@@ -193,7 +181,7 @@ class Trainer:
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
         self.high_acc = 0.0
 
-    def save_model(self, epoch, loss):
+    def save_model(self, epoch, loss, acc):
         # 모델 저장 경로 설정
         os.makedirs(self.result_path, exist_ok=True)
 
@@ -201,35 +189,35 @@ class Trainer:
         current_model_path = os.path.join(self.result_path, f'model_epoch_{epoch}_loss_{loss:.4f}.pt')
         torch.save(self.model.state_dict(), current_model_path)
 
-        # 최상위 3개 모델 관리
-        self.best_models.append((loss, epoch, current_model_path))
-        self.best_models.sort()
-        if len(self.best_models) > 3:
-            _, _, path_to_remove = self.best_models.pop(-1)  # 가장 높은 손실 모델 삭제
-            if os.path.exists(path_to_remove):
-                os.remove(path_to_remove)
-
-        # 가장 낮은 손실의 모델 저장
-        if loss < self.lowest_loss:
-            self.lowest_loss = loss
-            best_model_path = os.path.join(self.result_path, 'best_model.pt')
-            torch.save(self.model.state_dict(), best_model_path)
-            print(f"Save {epoch}epoch result. Loss = {loss:.4f}")
-
         # # 최상위 3개 모델 관리
-        # self.best_models.append((acc, epoch, current_model_path))
+        # self.best_models.append((loss, epoch, current_model_path))
         # self.best_models.sort()
         # if len(self.best_models) > 3:
-        #     _, _, path_to_remove = self.best_models.pop(0)  # 가장 낮은 정확도 모델 삭제
+        #     _, _, path_to_remove = self.best_models.pop(-1)  # 가장 높은 손실 모델 삭제
         #     if os.path.exists(path_to_remove):
         #         os.remove(path_to_remove)
 
         # # 가장 낮은 손실의 모델 저장
-        # if acc > self.high_acc:
-        #     self.high_acc = acc
+        # if loss < self.lowest_loss:
+        #     self.lowest_loss = loss
         #     best_model_path = os.path.join(self.result_path, 'best_model.pt')
         #     torch.save(self.model.state_dict(), best_model_path)
-        #     print(f"Save {epoch}epoch result. Accuracy = {acc:.4f}")
+        #     print(f"Save {epoch}epoch result. Loss = {loss:.4f}")
+
+        # 최상위 3개 모델 관리
+        self.best_models.append((acc, epoch, current_model_path))
+        self.best_models.sort()
+        if len(self.best_models) > 3:
+            _, _, path_to_remove = self.best_models.pop(0)  # 가장 낮은 정확도 모델 삭제
+            if os.path.exists(path_to_remove):
+                os.remove(path_to_remove)
+
+        # 가장 높은 정확도의 모델 저장
+        if acc > self.high_acc:
+            self.high_acc = acc
+            best_model_path = os.path.join(self.result_path, 'best_model.pt')
+            torch.save(self.model.state_dict(), best_model_path)
+            print(f"Save {epoch}epoch result. Accuracy = {acc:.4f}")
 
     def train_epoch(self) -> float:
         # 한 에폭 동안의 훈련을 진행
@@ -283,6 +271,7 @@ class Trainer:
                 _, target_labels = torch.max(targets, 1)
                 total += targets.size(0)
                 correct += (predicted == target_labels).sum().item()
+                correct += (predicted == target_labels).sum().item()
 
                 progress_bar.set_postfix(loss=loss.item(), acc=correct/total)
         
@@ -298,7 +287,7 @@ class Trainer:
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc:.4f}")
             print(f"Epoch {epoch+1}, Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_acc:.4f}\n")
 
-            self.save_model(epoch, val_loss)
+            self.save_model(epoch, val_loss, val_acc)
             self.scheduler.step()
 
 def get_trainer(train_loader, val_loader) -> Trainer:
@@ -307,6 +296,7 @@ def get_trainer(train_loader, val_loader) -> Trainer:
 
 trainer = get_trainer(train_loader, val_loader) 
 trainer.train()
+
 
 
 # 모델 추론을 위한 함수
