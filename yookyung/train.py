@@ -69,25 +69,5 @@ val_loader = DataLoader(
     shuffle=False
 )
 
-# # 학습에 사용할 Model을 선언.
-# model_selector = ModelSelector(
-#     model_type=config.MODEL_TYPE, 
-#     num_classes=config.NUM_CLASSES,
-#     model_name=config.MODEL_NAME, 
-#     pretrained=config.PRETRAINED
-# )
-
-# model = model_selector.get_model()
-# model.to(device)
-
-# # 학습에 사용할 optimizer를 선언하고, learning rate를 지정
-# optimizer = get_optimizer(model.parameters())
-# scheduler = get_scheduler(config.SCHEDULER, optimizer, steps_per_epoch=len(train_loader))
-
-
-# # 학습에 사용할 Loss를 선언.
-# loss_fn = get_loss_function()
-
-# 앞서 선언한 필요 class와 변수들을 조합해, 학습을 진행할 Trainer를 선언. 
 trainer = get_trainer(train_loader, val_loader) 
 trainer.train()

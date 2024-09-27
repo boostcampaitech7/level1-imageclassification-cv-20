@@ -85,10 +85,6 @@ class SketchImageAugmentation:
                     A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
                     A.ElasticTransform(alpha=0.5, sigma=5, alpha_affine=5, p=0.5),
 
-                    ## Morphological transformations
-                    #A.Erosion(kernel=(1, 2), p=0.5),
-                    #A.Dilation(kernel=(1, 2), p=0.5),
-
                     # Noise and blur
                     A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
                     A.MotionBlur(blur_limit=(3, 7), p=0.5),
@@ -98,7 +94,6 @@ class SketchImageAugmentation:
 
                     # Advanced techniques
                     A.OneOf([
-                        # A.AutoContrast(p=0.5),
                         A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5),
                     ], p=0.5),
                     A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
