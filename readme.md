@@ -30,7 +30,8 @@ T7174|T7118|T7125|T7127|T7150|T7217|
 
 </div>
 
-wrap up 레포트 : [wrap up report](C:\Users\USER\Desktop\level1-imageclassification-cv-20\CV기초대회_CV_팀 리포트(20조).pdf)
+wrap up 레포트 : [wrap up report](https://github.com/boostcampaitech7/level1-imageclassification-cv-20/blob/674e4c990fe64a0fc9e35b22405677ccc727e3ac/CV%EA%B8%B0%EC%B4%88%EB%8C%80%ED%9A%8C_CV_%ED%8C%80%20%EB%A6%AC%ED%8F%AC%ED%8A%B8(20%EC%A1%B0).pdf)
+
 <br/>
 <br/>
 
