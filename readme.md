@@ -30,7 +30,8 @@ T7174|T7118|T7125|T7127|T7150|T7217|
 
 </div>
 
-wrap up 레포트 : [wrap up report](https://github.com/boostcampaitech7/level1-imageclassification-cv-20/blob/efc086059f98b8eac9156d3befec95254353143b/CV%EA%B8%B0%EC%B4%88%EB%8C%80%ED%9A%8C_CV_%ED%8C%80%20%EB%A6%AC%ED%8F%AC%ED%8A%B8(20%EC%A1%B0).pdf)
+wrap up 레포트 : [wrap up report](https://github.com/boostcampaitech7/level1-imageclassification-cv-20/blob/674e4c990fe64a0fc9e35b22405677ccc727e3ac/CV%EA%B8%B0%EC%B4%88%EB%8C%80%ED%9A%8C_CV_%ED%8C%80%20%EB%A6%AC%ED%8F%AC%ED%8A%B8(20%EC%A1%B0).pdf)
+
 <br/>
 <br/>
 
