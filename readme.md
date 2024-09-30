@@ -30,7 +30,7 @@ T7174|T7118|T7125|T7127|T7150|T7217|
 
 </div>
 
-wrap up 레포트 : [wrap up report](https://)
+wrap up 레포트 : [wrap up report](C:\Users\USER\Desktop\level1-imageclassification-cv-20\CV기초대회_CV_팀 리포트(20조).pdf)
 <br/>
 <br/>
 
@@ -78,13 +78,14 @@ wrap up 레포트 : [wrap up report](https://)
 
 | model name | learning rate | accuracy |
 |:---:|:---:|:---:|
-|**efficient_b1** |0.0003|**0.7823**|
+|efficient_b1 |0.0003|0.7823|
 |resnet18|0.0003|0.4329|
 |resnet50|0.0003|0.6279|
 |resnet101|0.0003|0.5956|
 |vit_b_16|0.0003|0.6575|
 |densenet121|0.0003|0.4552|
 |mobile_v2|0.0003|0.576|
+|**convnext**|0.0003|**0.8224**|
 <br/>
 
 ### 4-2. 증강 기법별 ConvNext 성능 비교
@@ -155,10 +156,20 @@ wrap up 레포트 : [wrap up report](https://)
 
 ```
 📦level1-imageclassification-cv-20
-├-ㅡ
-│
-│
-└
-
-
+ ┣ 📂etc # 개인 작업 폴더
+ ┣ 📂models # 모델 관련 폴더
+ ┃ ┣ 📜loss.py # 손실 함수 정의 파일
+ ┃ ┣ 📜models.py # 모델 코드 파일
+ ┃ ┣ 📜optimizer.py # 최적화 알고리즘 파일
+ ┃ ┗ 📜scheduler.py # 학습률 스케쥴러 파일
+ ┣ 📂output # csv output 폴더
+ ┣ 📂src # 모델 관련 폴더
+ ┃ ┣ 📜dataset.py # 데이터셋 파일
+ ┃ ┣ 📜trainer.py # 훈련 파일
+ ┃ ┗ 📜transform.py # 데이터 변환 파일
+ ┣ 📜config.py # 설정 파일
+ ┣ 📜ensemble.py # 앙상블 실행 파일
+ ┣ 📜test.py # 추론 실행 파일
+ ┣ 📜train.py # 학습 실행 파일
+ ┗ 📜utils.py # 유틸리티 함수 파일
 ```
