@@ -1,0 +1,7 @@
+**/train_result/
+**/data
+**/wandb
+**/latest-run
+**/wandb/debug*
+**/bpteRun
+**/__pycache__
